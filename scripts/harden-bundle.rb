@@ -50,7 +50,9 @@ replacements = {
 replacements.each do |old_text, new_text|
   count = template.scan(old_text).length
   abort "Expected one match, found #{count}: #{old_text.lines.first.strip}" unless count == 1
-  template.sub!(old_text, new_text)
+  # The block form keeps JavaScript backslashes literal. A replacement string
+  # would interpret sequences such as `\+` as Ruby replacement backreferences.
+  template.sub!(old_text) { new_text }
 end
 
 # Avoid closing the outer custom script tag while storing the template as JSON.
