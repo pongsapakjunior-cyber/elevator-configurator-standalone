@@ -602,6 +602,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     <h1>Traction elevator</h1>
   </div>
   <form id="f" class="group" autocomplete="off">
+    <input id="cabinSelected" type="hidden" value="0">
     <h2>Project</h2>
     <div class="field"><label for="project">Project name</label><input class="input" id="project" type="text" placeholder="e.g. Sathorn Office Tower"></div>
     <div class="row">
@@ -677,7 +678,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div class="decor-controls">
     <p class="kicker">Cabin specification</p>
     <h1 id="decorationTitle">Choose the finish.</h1>
-    <p class="decor-intro">Select a cabin, then add a ceiling, floor, handrail, hall button, COP and controller only when required. The cabin is required; every other item is optional and hidden when not selected. Selections are included in the customer link and QR code.</p>
+    <p class="decor-intro">SC-C-A is the starting cabin. Confirm a cabin only when it is required on the quotation; every other decoration is optional and hidden when not selected. Selections are included in the customer link and QR code.</p>
     <div class="decor-form">
       <div class="decor-field">
         <label for="cabinStyle">Cabin collection</label>
@@ -732,7 +733,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     </div>
     <dl class="decor-summary">
       <div class="decor-summary-project"><dt>Project name</dt><dd data-decor="project">Not entered</dd></div>
-      <div><dt>Cabin</dt><dd data-decor="cabin">SC-C05</dd></div>
+      <div><dt>Cabin</dt><dd data-decor="cabin">SC-C-A</dd></div>
       <div><dt>Ceiling</dt><dd data-decor="ceiling">Not selected</dd></div>
       <div><dt>Floor</dt><dd data-decor="floor">Not selected</dd></div>
       <div><dt>Handrail</dt><dd data-decor="handrail">Not selected</dd></div>
@@ -748,8 +749,8 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div class="decor-main">
     <div class="decor-showcase">
       <div class="decor-preview">
-        <img id="decorPreviewImage" src="./assets/decorations/sc-c05.webp" alt="SC-C05 Schneider elevator cabin">
-        <div class="decor-preview-copy"><b id="decorPreviewTitle">SC-C05</b><span id="decorPreviewDescription">Hairline and etched stainless with acrylic wall strips and stainless handrail.</span></div>
+        <img id="decorPreviewImage" src="./assets/decorations/sc-c-a.webp" alt="SC-C-A Schneider elevator cabin">
+        <div class="decor-preview-copy"><b id="decorPreviewTitle">SC-C-A</b><span id="decorPreviewDescription">Hairline stainless walls and doors with a clean, durable passenger-cabin finish.</span></div>
       </div>
       <div class="selected-finishes" aria-label="Selected decoration finishes">
         <article class="selected-finish empty" data-finish-category="ceiling">
@@ -874,7 +875,7 @@ const DEFAULTS = {
   entrances: 1, roping: 1,
   overhead: 4300, pit: 1400,
   floorToFloor: 3400, floorHeightMode: 'uniform', floorDimensionDisplay: 'show', floors: 3, floorHeights: null,
-  cabinStyle: 'SC-C05', ceilingFinish: 'none', floorFinish: 'none', handrailFinish: 'none', hallButtonFinish: 'none', copFinish: 'none', controllerFinish: 'none',
+  cabinStyle: 'SC-C-A', cabinSelected: 0, ceilingFinish: 'none', floorFinish: 'none', handrailFinish: 'none', hallButtonFinish: 'none', copFinish: 'none', controllerFinish: 'none',
   logoUrl: null,
 };
 
@@ -1522,9 +1523,9 @@ const FINISH_LIBRARIES = [
   stage.shadowRoot.querySelectorAll('.toolbar,.note').forEach(e => e.style.display = 'none');
   const form = document.getElementById('f'), notesEl = document.getElementById('notes'), spec = document.getElementById('spec');
   const floorlist = document.getElementById('floorlist'), labelsEl = document.getElementById('labels');
-  const ids = ['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'];
+  const ids = ['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'];
   const textIds = ['project', 'liftNo', 'location', 'modelName'];
-  const numericIds = new Set(['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor']);
+  const numericIds = new Set(['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'cabinSelected']);
   const cabinStyleEl = document.getElementById('cabinStyle'), cabinGrid = document.getElementById('cabinGrid');
   cabinStyleEl.innerHTML = CABIN_OPTIONS.map(o => `<option value="${o.id}">${o.id} — ${o.group}</option>`).join('');
   cabinStyleEl.value = DEFAULTS.cabinStyle;
@@ -1551,7 +1552,7 @@ const FINISH_LIBRARIES = [
     'project', 'modelName', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorH',
     'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'overhead', 'pit', 'floors',
     'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'ceilingFinish', 'floorFinish',
-    'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'floorHeights',
+    'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'floorHeights', 'cabinSelected',
   ];
   const compactConfigValue = (key, source) => {
     const value = source[key];
@@ -1559,6 +1560,7 @@ const FINISH_LIBRARIES = [
     if (key === 'floorHeightMode') return value === 'individual' ? 'i' : 'u';
     if (key === 'floorDimensionDisplay') return value === 'hide' ? 'h' : 's';
     if (key === 'floorHeights') return source.floorHeightMode === 'individual' ? value : 0;
+    if (key === 'cabinSelected') return value ? 1 : 0;
     if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'].includes(key)) {
       return !value || value === 'none' ? 0 : value;
     }
@@ -1929,6 +1931,7 @@ const FINISH_LIBRARIES = [
   });
   document.body.addEventListener('change', (e) => {
     if (e.target.tagName !== 'SELECT') return;
+    if (e.target.id === 'cabinStyle') document.getElementById('cabinSelected').value = '1';
     if (e.target.id === 'doorType') syncPanels();
     if (e.target.id === 'floorHeightMode') syncFloorMode();
     clearTimeout(timer);
