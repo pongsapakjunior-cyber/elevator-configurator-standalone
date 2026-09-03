@@ -7,6 +7,12 @@ html = File.read(path, encoding: "UTF-8")
 match = html.match(%r{(<script type="__bundler/template">\s*)(.*?)(\s*</script>)}m)
 abort "Could not find the bundled page template" unless match
 
+manifest_match = html.match(%r{<script type="__bundler/manifest">\s*(.*?)\s*</script>}m)
+abort "Could not find the bundle manifest" unless manifest_match
+manifest = JSON.parse(manifest_match[1])
+logo_asset_id = manifest.find { |_id, asset| asset["mime"] == "image/jpeg" }&.first
+abort "Could not find the embedded Schneider logo" unless logo_asset_id
+
 template = JSON.parse(match[2])
 
 def indent_js(text)
@@ -14,6 +20,8 @@ def indent_js(text)
 end
 
 replacements = {
+  "    const { params: P, notes } = normalize({ ...raw, logoUrl: './assets/schneider-logo.jpg' });" =>
+    "    const { params: P, notes } = normalize({ ...raw, logoUrl: '#{logo_asset_id}' });",
   "import * as THREE from 'three';" => <<~'NEW'.chomp,
     import * as THREE from 'three';
     import { qrcode } from './assets/qrcode.mjs';
