@@ -599,7 +599,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 <aside class="model-sidebar">
   <div>
     <p class="kicker">Owner configuration</p>
-    <h1>Traction elevator</h1>
+    <h1 id="modelHeading">Traction elevator</h1>
   </div>
   <form id="f" class="group" autocomplete="off">
     <input id="cabinSelected" type="hidden" value="0">
@@ -610,6 +610,9 @@ textarea.input { min-height: 90px; resize: vertical; }
       <div class="field"><label for="location">Location</label><input class="input" id="location" type="text" placeholder="Bangkok"></div>
     </div>
     <div class="field"><label for="modelName">Model name <span style="color:var(--color-neutral-700)">(optional)</span></label><input class="input" id="modelName" type="text" placeholder="e.g. SL-MRL 450"></div>
+    <div class="field"><label for="elevatorType">Elevator model</label>
+      <select class="input" id="elevatorType" form="f"><option value="mr">MR — traction with machine room</option><option value="mrl">MRL — machine-room-less traction</option></select>
+    </div>
     <h2>Duty</h2>
     <div class="row">
       <div class="field"><label for="capacity">Capacity</label><div class="unit" data-unit="kg"><input class="input" id="capacity" name="capacity" type="number" min="240" max="2500" step="10" value="450"></div></div>
@@ -845,6 +848,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div class="toast" id="toast">Link copied</div>
 </div>
 <dl class="spec" id="spec" tabindex="0" aria-label="Configured elevator specifications">
+  <div><dt>Elevator model</dt><dd data-k="elevatorTypeTxt">MR — machine room</dd></div>
   <div><dt>Capacity</dt><dd data-k="capacity">450 kg / 6 p.</dd></div>
   <div><dt>Speed</dt><dd data-k="speedTxt">1.0 m/s</dd></div>
   <div><dt>Car W × D</dt><dd data-k="car">1800 × 1500</dd></div>
@@ -869,6 +873,7 @@ import { qrcode } from './assets/qrcode.mjs';
 
 // All sizes in mm (UI units); converted to meters inside.
 const DEFAULTS = {
+  elevatorType: 'mr',
   capacity: 450, persons: 6, speed: 1.0,
   carW: 1800, carD: 1500, carH: 2400, shaftW: 2500, shaftD: 2100,
   doorW: 1100, doorH: 2100, doorType: 'center', doorPanels: 2,
@@ -882,6 +887,7 @@ const DEFAULTS = {
 // Clamp user sizes to what physically fits; returns {params, notes[]}
 function normalize(opts = {}) {
   const P = { ...DEFAULTS, ...opts }, notes = [];
+  P.elevatorType = P.elevatorType === 'mrl' ? 'mrl' : 'mr';
   if (String(P.copFinish || '').toUpperCase() === 'COP-LISA20') P.copFinish = 'COP-01';
   P.floors = Math.min(40, Math.max(2, Math.round(P.floors || 2)));
   if (P.carW > P.shaftW - 360) { P.carW = P.shaftW - 360; notes.push(`Car width limited to ${P.carW} mm (shaft − 360)`); }
@@ -898,7 +904,8 @@ function normalize(opts = {}) {
   P.roping = +P.roping === 2 ? 2 : 1;
   P.floorDimensionDisplay = P.floorDimensionDisplay === 'hide' ? 'hide' : 'show';
   if (P.pit < 1200) { P.pit = 1200; notes.push('Pit raised to 1200 mm minimum'); }
-  if (P.overhead < 3600) { P.overhead = 3600; notes.push('Overhead raised to 3600 mm minimum'); }
+  const minimumOverhead = P.elevatorType === 'mrl' ? 4000 : 3600;
+  if (P.overhead < minimumOverhead) { P.overhead = minimumOverhead; notes.push(`Overhead raised to ${minimumOverhead} mm minimum for ${P.elevatorType.toUpperCase()}`); }
   // per-floor heights: array of (floors-1) values; fill missing from floorToFloor, clamp each
   const minF = P.doorH + 500, fh = Array.isArray(P.floorHeights) ? P.floorHeights.slice(0, P.floors - 1) : [];
   while (fh.length < P.floors - 1) fh.push(P.floorToFloor);
@@ -960,6 +967,7 @@ function buildElevator(opts = {}) {
   const CH = mm(P.carH);                // cab height
   const pw = dw / 2, open = pw;         // door panel width / open travel
   const twoOne = P.roping === 2;
+  const isMRL = P.elevatorType === 'mrl';
   // panel layout: closed centre x0, travel at full open, width w, nesting tier
   const panelSet = (() => {
     const out = [];
@@ -972,7 +980,7 @@ function buildElevator(opts = {}) {
     }
     return out;
   })();
-  const R = (zc - cz) / 2, zs = (zc + cz) / 2, ys = TOP + 0.55 + R;
+  const R = (zc - cz) / 2, zs = (zc + cz) / 2, ys = isMRL ? TOP - 0.65 : TOP + 0.55 + R;
   const FW = sw + 2 * T + 0.8;          // landing facade width
   const MW = Math.max(sw + 2 * T, 2.8); // machine-room slab width
   const stileX = cw / 2 + 0.045, shoeX0 = cw / 2 + 0.07, shoeX1 = W - 0.09;
@@ -1005,14 +1013,19 @@ function buildElevator(opts = {}) {
   }
   box('wall_left', M.concrete, T, TOP, sd + 2 * T, -(W + T / 2), TOP / 2, 0);
   const SY = TOP + 0.15, hz0 = cz - 0.15, hz1 = zc + 0.15, slabF1 = zF + T + 0.7, slabB0 = zB - T;
-  box('machine_slab_front', M.concrete, MW, 0.3, slabF1 - hz1, 0, SY, (slabF1 + hz1) / 2);
-  box('machine_slab_back', M.concrete, MW, 0.3, hz0 - slabB0, 0, SY, (hz0 + slabB0) / 2);
-  box('machine_slab_left', M.concrete, MW / 2 - 0.3, 0.3, hz1 - hz0, -(MW / 2 + 0.3) / 2, SY, (hz0 + hz1) / 2);
-  box('machine_slab_right', M.concrete, MW / 2 - 0.3, 0.3, hz1 - hz0, (MW / 2 + 0.3) / 2, SY, (hz0 + hz1) / 2);
-  box('rope_kerb_front', M.steel, 0.68, 0.1, 0.04, 0, TOP + 0.35, hz1 + 0.02);
-  box('rope_kerb_back', M.steel, 0.68, 0.1, 0.04, 0, TOP + 0.35, hz0 - 0.02);
-  box('rope_kerb_left', M.steel, 0.04, 0.1, hz1 - hz0 + 0.08, -0.32, TOP + 0.35, (hz0 + hz1) / 2);
-  box('rope_kerb_right', M.steel, 0.04, 0.1, hz1 - hz0 + 0.08, 0.32, TOP + 0.35, (hz0 + hz1) / 2);
+  if (isMRL) {
+    box('mrl_machine_beam', M.steel, sw - 0.24, 0.22, 0.28, 0, ys - R - 0.24, zs);
+    box('mrl_service_platform', M.galv, Math.max(0.7, sw * 0.55), 0.06, 0.65, -0.1, ys - R - 0.42, zs + 0.1);
+  } else {
+    box('machine_slab_front', M.concrete, MW, 0.3, slabF1 - hz1, 0, SY, (slabF1 + hz1) / 2);
+    box('machine_slab_back', M.concrete, MW, 0.3, hz0 - slabB0, 0, SY, (hz0 + slabB0) / 2);
+    box('machine_slab_left', M.concrete, MW / 2 - 0.3, 0.3, hz1 - hz0, -(MW / 2 + 0.3) / 2, SY, (hz0 + hz1) / 2);
+    box('machine_slab_right', M.concrete, MW / 2 - 0.3, 0.3, hz1 - hz0, (MW / 2 + 0.3) / 2, SY, (hz0 + hz1) / 2);
+    box('rope_kerb_front', M.steel, 0.68, 0.1, 0.04, 0, TOP + 0.35, hz1 + 0.02);
+    box('rope_kerb_back', M.steel, 0.68, 0.1, 0.04, 0, TOP + 0.35, hz0 - 0.02);
+    box('rope_kerb_left', M.steel, 0.04, 0.1, hz1 - hz0 + 0.08, -0.32, TOP + 0.35, (hz0 + hz1) / 2);
+    box('rope_kerb_right', M.steel, 0.04, 0.1, hz1 - hz0 + 0.08, 0.32, TOP + 0.35, (hz0 + hz1) / 2);
+  }
   if (P.entrances === 1) for (let y = 0.9, i = 0; y < TOP - 1; y += 3.4, i++) box(`hoistway_light_${i}`, M.lamp, 0.36, 0.05, 0.08, W - 0.35, y, zB + 0.05);
   box('pit_stop_switch', M.red, 0.04, 0.16, 0.1, -(W - 0.02), 1.6, zF - 0.45);
   box('pit_stop_switch_plate', M.galv, 0.02, 0.24, 0.16, -(W - 0.01), 1.6, zF - 0.45);
@@ -1235,17 +1248,19 @@ function buildElevator(opts = {}) {
     }
   });
 
-  // ---- machine room
+  // ---- traction machine (machine room or compact MRL overhead arrangement)
   const bedD = 2 * R + 0.5;
-  box('machine_bedplate', M.steel, 1.9, 0.15, bedD, 0.1, TOP + 0.375, zs);
-  plate('machine_brand_plate', 0.4, 0.1, TOP + 0.375, zs + bedD / 2 + 0.001);
+  const machineBaseY = isMRL ? ys - R - 0.22 : TOP + 0.375;
+  box('machine_bedplate', M.steel, 1.9, 0.15, bedD, 0.1, machineBaseY, zs);
+  plate('machine_brand_plate', 0.4, 0.1, machineBaseY, zs + bedD / 2 + 0.001);
   rig.rotors.push(cylX('traction_sheave', M.cast, R, 0.26, 0, ys, zs, 64));
   [-0.13, -0.1, 0, 0.1, 0.13].forEach((x, i) => rig.rotors.push(cylX(`sheave_groove_rim_${i}`, M.cast, Math.abs(x) > 0.12 ? R + 0.025 : R + 0.012, 0.012, x, ys, zs, 64)));
   rig.rotors.push(cylX('sheave_hub', M.cast, 0.16, 0.34, 0, ys, zs, 32));
   rig.rotors.push(cylX('machine_shaft', M.stainless, 0.07, 1.5, 0.35, ys, zs, 24));
   rig.rotors.push(box('sheave_spoke_a', M.cast, 0.06, R * 1.8, 0.28, 0, ys, zs));
   rig.rotors.push(add('sheave_spoke_b', new THREE.BoxGeometry(0.06, R * 1.8, 0.28), M.cast, 0, ys, zs, Math.PI / 2, 0, 0));
-  box('bearing_pedestal_left', M.steel, 0.22, ys - (TOP + 0.45), 0.42, -0.38, (ys + TOP + 0.45) / 2, zs);
+  const machineSupportY = isMRL ? machineBaseY + 0.08 : TOP + 0.45;
+  box('bearing_pedestal_left', M.steel, 0.22, Math.max(0.12, ys - machineSupportY), 0.42, -0.38, (ys + machineSupportY) / 2, zs);
   cylX('bearing_housing_left', M.cast, 0.14, 0.24, -0.38, ys, zs, 32);
   cylX('motor_housing', M.steel, 0.4, 0.75, 0.62, ys, zs, 48);
   for (let k = 0; k < 7; k++) cylX(`motor_fin_${k}`, M.steel, 0.43, 0.018, 0.32 + k * 0.1, ys, zs, 48);
@@ -1254,28 +1269,34 @@ function buildElevator(opts = {}) {
   cylX('motor_lifting_eye', M.galv, 0.03, 0.04, 0.62, ys + 0.58, zs, 12);
   cylX('motor_end_bell', M.steel, 0.26, 0.12, 1.05, ys, zs, 40);
   cylX('encoder', M.rubber, 0.06, 0.1, 1.14, ys, zs, 20);
-  box('motor_foot', M.steel, 0.7, ys - 0.4 - (TOP + 0.45), 0.9, 0.62, (ys - 0.4 + TOP + 0.45) / 2, zs);
+  const motorFootTop = ys - 0.4, motorFootBottom = isMRL ? machineBaseY + 0.05 : TOP + 0.45;
+  box('motor_foot', M.steel, 0.7, Math.max(0.12, motorFootTop - motorFootBottom), 0.9, 0.62, (motorFootTop + motorFootBottom) / 2, zs);
   rig.rotors.push(cylX('brake_disc', M.stainless, Math.max(0.2, R - 0.11), 0.03, -0.2, ys, zs, 64));
   rig.rotors.push(box('brake_disc_vent', M.cast, 0.04, Math.max(0.3, R * 1.1), 0.06, -0.2, ys, zs));
   const bR = Math.max(0.2, R - 0.11) - 0.02;
   rig.brakeTop = box('brake_caliper_top', M.red, 0.16, 0.2, 0.3, -0.2, ys + bR, zs);
   rig.brakeBot = box('brake_caliper_bottom', M.red, 0.16, 0.2, 0.3, -0.2, ys - bR, zs);
   box('brake_frame', M.steel, 0.1, 2 * bR + 0.2, 0.12, -0.2, ys, zs - 0.2);
-  const ctlX = -(MW / 2 - 0.5), ctlZ = zF + T + 0.3;
-  box('controller_cabinet', M.steel, 0.8, 2.0, 0.4, ctlX, TOP + 1.3, ctlZ);
-  box('controller_plinth', M.cast, 0.84, 0.1, 0.44, ctlX, TOP + 0.35, ctlZ);
-  box('controller_door_seam', M.rubber, 0.006, 1.9, 0.01, ctlX, TOP + 1.3, ctlZ + 0.205);
-  box('controller_lamp', M.lamp, 0.03, 0.03, 0.01, ctlX - 0.3, TOP + 2.1, ctlZ + 0.205);
-  box('controller_vent', M.rubber, 0.5, 0.12, 0.01, ctlX, TOP + 2.15, ctlZ + 0.205);
-  box('controller_handle', M.stainless, 0.02, 0.2, 0.03, ctlX + 0.3, TOP + 1.3, ctlZ + 0.215);
-  plate('controller_brand_plate', 0.5, ctlX, TOP + 1.85, ctlZ + 0.2015);
-  box('cable_tray_a', M.galv, 0.14, 0.05, ctlZ - zs, ctlX, TOP + 0.33, (ctlZ + zs) / 2);
-  box('cable_tray_b', M.galv, Math.abs(ctlX) - 0.5, 0.05, 0.14, ctlX / 2 - 0.2, TOP + 0.33, zs);
+  const ctlW = isMRL ? 0.42 : 0.8, ctlH = isMRL ? 1.55 : 2.0, ctlD = isMRL ? 0.28 : 0.4;
+  const ctlX = isMRL ? -(W - ctlW / 2 - 0.03) : -(MW / 2 - 0.5);
+  const ctlZ = isMRL ? zB + ctlD / 2 + 0.04 : zF + T + 0.3;
+  const ctlY = isMRL ? TOP - 1.15 : TOP + 1.3, ctlFace = ctlZ + ctlD / 2 + 0.005;
+  box('controller_cabinet', M.steel, ctlW, ctlH, ctlD, ctlX, ctlY, ctlZ);
+  box('controller_plinth', M.cast, ctlW + 0.04, 0.1, ctlD + 0.04, ctlX, ctlY - ctlH / 2 - 0.05, ctlZ);
+  box('controller_door_seam', M.rubber, 0.006, ctlH - 0.1, 0.01, ctlX, ctlY, ctlFace);
+  box('controller_lamp', M.lamp, 0.03, 0.03, 0.01, ctlX - ctlW * 0.3, ctlY + ctlH * 0.35, ctlFace);
+  box('controller_vent', M.rubber, ctlW * 0.62, 0.1, 0.01, ctlX, ctlY + ctlH * 0.4, ctlFace);
+  box('controller_handle', M.stainless, 0.02, 0.18, 0.03, ctlX + ctlW * 0.3, ctlY, ctlFace + 0.01);
+  plate('controller_brand_plate', Math.min(0.5, ctlW * 0.7), ctlX, ctlY + ctlH * 0.25, ctlFace + 0.001);
+  const trayY = isMRL ? TOP - 0.3 : TOP + 0.33;
+  box('cable_tray_a', M.galv, 0.14, 0.05, Math.max(0.14, Math.abs(ctlZ - zs)), ctlX, trayY, (ctlZ + zs) / 2);
+  box('cable_tray_b', M.galv, Math.max(0.14, Math.abs(ctlX) - 0.5), 0.05, 0.14, ctlX / 2 - 0.2, trayY, zs);
   const gvX = W - 0.15, gvZ = fz - 0.05;
-  cylX('governor_sheave', M.cast, 0.16, 0.06, gvX, TOP + 0.6, gvZ, 40);
-  box('governor_stand', M.steel, 0.1, 0.35, 0.3, gvX, TOP + 0.325, gvZ);
-  box('governor_switch', M.red, 0.08, 0.1, 0.08, gvX, TOP + 0.78, gvZ - 0.15);
-  cylY('governor_rope', M.rope, 0.005, TOP + 0.6 - 0.55, gvX, (TOP + 0.6 + 0.55) / 2, gvZ + 0.16, 8);
+  const governorTopY = isMRL ? TOP - 0.45 : TOP + 0.6;
+  cylX('governor_sheave', M.cast, 0.16, 0.06, gvX, governorTopY, gvZ, 40);
+  box('governor_stand', M.steel, 0.1, 0.35, 0.3, gvX, governorTopY - 0.275, gvZ);
+  box('governor_switch', M.red, 0.08, 0.1, 0.08, gvX, governorTopY + 0.18, gvZ - 0.15);
+  cylY('governor_rope', M.rope, 0.005, governorTopY - 0.55, gvX, (governorTopY + 0.55) / 2, gvZ + 0.16, 8);
   cylX('governor_tension_sheave', M.cast, 0.16, 0.06, gvX, 0.55, gvZ, 40);
   box('governor_tension_frame', M.steel, 0.08, 0.5, 0.06, gvX, 0.7, gvZ - 0.2);
 
@@ -1523,7 +1544,7 @@ const FINISH_LIBRARIES = [
   stage.shadowRoot.querySelectorAll('.toolbar,.note').forEach(e => e.style.display = 'none');
   const form = document.getElementById('f'), notesEl = document.getElementById('notes'), spec = document.getElementById('spec');
   const floorlist = document.getElementById('floorlist'), labelsEl = document.getElementById('labels');
-  const ids = ['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'];
+  const ids = ['elevatorType', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'];
   const textIds = ['project', 'liftNo', 'location', 'modelName'];
   const numericIds = new Set(['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'cabinSelected']);
   const cabinStyleEl = document.getElementById('cabinStyle'), cabinGrid = document.getElementById('cabinGrid');
@@ -1552,7 +1573,7 @@ const FINISH_LIBRARIES = [
     'project', 'modelName', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorH',
     'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'overhead', 'pit', 'floors',
     'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'ceilingFinish', 'floorFinish',
-    'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'floorHeights', 'cabinSelected',
+    'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'floorHeights', 'cabinSelected', 'elevatorType',
   ];
   const compactConfigValue = (key, source) => {
     const value = source[key];
@@ -1561,6 +1582,7 @@ const FINISH_LIBRARIES = [
     if (key === 'floorDimensionDisplay') return value === 'hide' ? 'h' : 's';
     if (key === 'floorHeights') return source.floorHeightMode === 'individual' ? value : 0;
     if (key === 'cabinSelected') return value ? 1 : 0;
+    if (key === 'elevatorType') return value === 'mrl' ? 'l' : 'r';
     if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'].includes(key)) {
       return !value || value === 'none' ? 0 : value;
     }
@@ -1580,6 +1602,7 @@ const FINISH_LIBRARIES = [
       if (key === 'doorType') decoded = decoded === 's' ? 'side' : 'center';
       else if (key === 'floorHeightMode') decoded = decoded === 'i' ? 'individual' : 'uniform';
       else if (key === 'floorDimensionDisplay') decoded = decoded === 'h' ? 'hide' : 'show';
+      else if (key === 'elevatorType') decoded = decoded === 'l' ? 'mrl' : 'mr';
       else if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'].includes(key) && decoded === 0) decoded = 'none';
       else if (key === 'floorHeights' && decoded === 0) return;
       else if ((key === 'project' || key === 'modelName') && decoded === 0) decoded = '';
@@ -1815,6 +1838,9 @@ const FINISH_LIBRARIES = [
     const n = Math.min(40, Math.max(2, Math.round(raw.floors || 2)));
     if (floorlist.querySelectorAll('input').length !== n - 1) { syncFloorList(n, raw.floorToFloor); raw.floorHeights = read().floorHeights; }
     const { params: P, notes } = normalize({ ...raw, logoUrl: './assets/schneider-logo.jpg' });
+    const overheadInput = document.getElementById('overhead');
+    overheadInput.min = P.elevatorType === 'mrl' ? '4000' : '3600';
+    if (raw.overhead !== P.overhead) { raw.overhead = P.overhead; overheadInput.value = String(P.overhead); }
     notesEl.innerHTML = notes.map(n => `<span>${n}</span>`).join('');
     const old = model;
     // build the full stack: one modelled floor per stop
@@ -1833,6 +1859,8 @@ const FINISH_LIBRARIES = [
     const travel = P.floorHeights.reduce((a, b) => a + b, 0);
     syncDecorationUI(P);
     const set = (k, v) => spec.querySelector(`[data-k="${k}"]`).textContent = v;
+    document.getElementById('modelHeading').textContent = P.elevatorType === 'mrl' ? 'MRL traction elevator' : 'Traction elevator';
+    set('elevatorTypeTxt', P.elevatorType === 'mrl' ? 'MRL — machine-room-less' : 'MR — machine room');
     set('capacity', `${fmt(P.capacity)} kg / ${persons} p.`);
     set('speedTxt', `${P.speed.toFixed(P.speed % 0.5 ? 2 : 1)} m/s`);
     set('car', `${fmt(P.carW)} × ${fmt(P.carD)}`);
