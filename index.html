@@ -891,7 +891,7 @@ function normalize(opts = {}) {
   if (String(P.copFinish || '').toUpperCase() === 'COP-LISA20') P.copFinish = 'COP-01';
   P.floors = Math.min(40, Math.max(2, Math.round(P.floors || 2)));
   if (P.carW > P.shaftW - 360) { P.carW = P.shaftW - 360; notes.push(`Car width limited to ${P.carW} mm (shaft − 360)`); }
-  if (P.carD > P.shaftD - 460) { P.carD = P.shaftD - 460; notes.push(`Car depth limited to ${P.carD} mm (shaft − 460)`); }
+  // Preserve the specified car depth; do not derive it from shaft clearance.
   if (P.doorW > P.carW - 200) { P.doorW = P.carW - 200; notes.push(`Door width limited to ${P.doorW} mm (car − 200)`); }
   const minCarH = P.doorH + 200;
   if (P.carH < minCarH) { P.carH = minCarH; notes.push(`Car height raised to ${P.carH} mm (door height + 200)`); }
