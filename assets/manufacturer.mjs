@@ -1,6 +1,6 @@
 // Review drawings only. No motor sizing, rail selection, loads or installation
 // clearances are inferred from capacity or copied from a reference project.
-import { detailedPlan, detailedSection, detailedFactoryViews, cadStyles, cadDefs } from './manufacturer-drafting.mjs';
+import { detailedPlan, detailedSection, detailedOverhead, detailedEntrance, detailedSupport, cadStyles, cadDefs } from './manufacturer-drafting.mjs';
 export const FACTORY_FIELDS = Object.freeze([
   ['motorModel', 'Motor / traction machine'], ['motorPower', 'Motor power (kW)'],
   ['ratedCurrent', 'Rated current (A)'], ['supply', 'Supply (V / Hz / phases)'],
@@ -54,13 +54,13 @@ function wrapText(value,width,size=14) {
   }return lines;
 }
 function schedule(rows,title,x,y,width) {
-  let out=txt(x,y,title,17),cursor=y+15;const keyWidth=240;
+  let out=txt(x,y,title,15),cursor=y+15;const keyWidth=Math.min(250,width*.52);
   for(const [key,value] of rows){
-    const keys=wrapText(key,keyWidth-20,13),values=wrapText(value||'Manufacturer to confirm',width-keyWidth-20,13);
-    const h=Math.max(30,Math.max(keys.length,values.length)*17+13);
+    const keys=wrapText(key,keyWidth-20,12),values=wrapText(value||'Manufacturer to confirm',width-keyWidth-20,12);
+    const h=Math.max(26,Math.max(keys.length,values.length)*15+10);
     out+=rect(x,cursor,width,h,'cell')+line(x+keyWidth,cursor,x+keyWidth,cursor+h,'cell');
-    keys.forEach((part,i)=>{out+=txt(x+10,cursor+21+i*17,part,13);});
-    values.forEach((part,i)=>{out+=txt(x+keyWidth+10,cursor+21+i*17,part,13,'start',`class="${value?'':'pending'}"`);});
+    keys.forEach((part,i)=>{out+=txt(x+10,cursor+18+i*15,part,12);});
+    values.forEach((part,i)=>{out+=txt(x+keyWidth+10,cursor+18+i*15,part,12,'start',`class="${value?'':'pending'}"`);});
     cursor+=h;
   }return {markup:out,endY:cursor};
 }
@@ -70,7 +70,7 @@ function view(fragment,x,y,width,height,source) {
 }
 function shell(m,body,height,header) {
   const paperHeight=height===1697?420:Number((height*594/2400).toFixed(2)),foot=height-80;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="594mm" height="${paperHeight}mm" viewBox="0 0 2400 ${height}" role="img" aria-label="Manufacturer complete drawing and specifications"><style>text{font-family:Arial,Tahoma,sans-serif;fill:#122b27}line,rect{stroke:#263d37;stroke-width:1;fill:none}.dimension{marker-start:url(#arrow);marker-end:url(#arrow);stroke-width:.8}.dim-label{paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round}${cadStyles}</style><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#263d37"/></marker>${cadDefs}</defs><rect width="2400" height="${height}" style="fill:white;stroke:none"/>${rect(24,24,2352,height-48)}${header}${body}${line(24,foot,2376,foot)}${txt(44,foot+28,'FOR MANUFACTURER REVIEW — NOT FOR CONSTRUCTION',17)}${txt(44,foot+49,'Configured requirements only. Factory values, locations, loads and site dimensions require manufacturer verification.',13)}${txt(2355,foot+28,`1 / 1   •   mm   •   NTS   •   ${height===1697?'A2':'594 × '+paperHeight+' mm'}`,15,'end')}${txt(2355,foot+49,m.quotationDate||'Unconfirmed / no approval date',13,'end')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="594mm" height="${paperHeight}mm" viewBox="0 0 2400 ${height}" role="img" aria-label="Manufacturer complete drawing and specifications"><style>.dimension{marker-start:url(#arrow);marker-end:url(#arrow)}${cadStyles}</style><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M9 1L1 5L9 9" style="fill:none;stroke:#111;stroke-width:1"/></marker>${cadDefs}</defs><rect width="2400" height="${height}" style="fill:white;stroke:none"/>${rect(14,14,2372,height-28)}${rect(24,24,2352,height-48)}${header}${body}${line(24,foot,2376,foot)}${txt(44,foot+28,'FOR MANUFACTURER REVIEW — NOT FOR CONSTRUCTION',17)}${txt(44,foot+49,'Configured requirements only. Factory values, locations, loads and site dimensions require manufacturer verification.',13)}${txt(2355,foot+28,`1 / 1   •   mm   •   NTS   •   ${height===1697?'A2':'594 × '+paperHeight+' mm'}`,15,'end')}${txt(2355,foot+49,m.quotationDate||'Unconfirmed / no approval date',13,'end')}</svg>`;
 }
 export function renderManufacturerSheets(config) {
   const m=manufacturerModel(config);
@@ -83,12 +83,16 @@ export function renderManufacturerSheets(config) {
   const subtitleLines=wrapText(`${m.model||m.elevatorType} • ${m.quotation||'Quotation not linked'} • Complete drawing and specifications`,1900,15);
   const headerBottom=45+projectLines.length*31+subtitleLines.length*21+14,shift=headerBottom-111;
   const header=projectLines.map((part,i)=>txt(44,60+i*31,part,26)).join('')+subtitleLines.map((part,i)=>txt(44,45+projectLines.length*31+i*21+15,part,15)).join('')+txt(2355,58,'SCHNEIDER LIFT',24,'end')+txt(2355,83,'MANUFACTURER REVIEW',14,'end')+line(24,headerBottom,2376,headerBottom);
-  const configuredTable=schedule(configured,'CONFIGURED REQUIREMENTS',1740,145+shift,624);
-  const factoryTable=schedule(factory,'FACTORY DESIGN SCHEDULE',1740,configuredTable.endY+35,624);
-  const requirements=schedule([...floors,...detailRows],'FLOOR LEVELS & QUOTATION DETAILS',1740,factoryTable.endY+35,624);
-  const height=Math.ceil(Math.max(1697+shift,requirements.endY+130));
-  const drawings=view(detailedPlan(m),38,145+shift,1125,670,[0,110,980,700])+view(detailedSection(m),1168,145+shift,520,760,[975,110,570,930])+view(detailedFactoryViews(m),38,890+shift,1664,708,[20,110,1540,710]);
-  const body=drawings+line(1715,headerBottom,1715,height-80,'cell')+configuredTable.markup+factoryTable.markup+requirements.markup+txt(1740,requirements.endY+28,'Manufacturer / revision: ______________________________',13);
+  const configuredTable=schedule(configured,'CONFIGURED REQUIREMENTS',1875,145+shift,489);
+  const factoryTable=schedule(factory,'FACTORY DESIGN SCHEDULE',1875,configuredTable.endY+30,489);
+  const requirements=schedule(detailRows,'FLOOR LEVELS & QUOTATION DETAILS',1875,factoryTable.endY+30,489);
+  const floorTable=schedule(floors,'FLOOR LEVEL SCHEDULE',60,1305+shift,500);
+  const record=schedule([['DRAWING','Elevator shaft plan layout'],['PROJECT REF.',m.quotation||'Not linked'],['MODEL',m.model||m.elevatorType],['DRAWN / CHECKED','________________________']],'DRAWING RECORD',0,0,489);
+  const height=Math.ceil(Math.max(1697+shift,requirements.endY+record.endY+140,floorTable.endY+210));
+  const drawings=view(detailedSection(m),40,150+shift,540,1110,[0,0,650,1320])+view(detailedPlan(m),600,150+shift,800,665,[0,0,1040,810])+view(detailedSupport(m),1420,180+shift,430,600,[0,0,520,670])+view(detailedOverhead(m),610,850+shift,700,710,[0,0,760,790])+view(detailedEntrance(m),1315,850+shift,540,710,[0,0,620,810]);
+  const signY=Math.max(floorTable.endY+35,height-190);
+  const sign=rect(60,signY,500,95,'cell')+txt(74,signY+24,'CONFIRM BY MANUFACTURER / CLIENT',13)+line(60,signY+36,560,signY+36,'cell')+txt(74,signY+62,'Signature: _________________________________',12)+txt(74,signY+82,'Drawing / revision / date: ___________________',12);
+  const body=drawings+line(1858,headerBottom,1858,height-80,'cell')+configuredTable.markup+factoryTable.markup+requirements.markup+floorTable.markup+sign+`<g transform="translate(1875 ${height-110-record.endY})">${record.markup}</g>`;
   return [shell(m,body,height,header)];
 }
 export function createManufacturerUI(host, onChange) {

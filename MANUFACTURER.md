@@ -22,6 +22,12 @@ editors also provide a current-context manufacturer link and an embedded tab.
 - Full editor/manufacturer links preserve factory fields and quotation context.
   Compact customer QR schema remains byte-compatible and excludes factory fields.
 - Manufacturer displays one combined sheet with all five views and all schedules.
+  The reference-led sheet places the full-height hoistway section at left,
+  paired shaft plan and machine support plan above, concrete slab/shaft isometric
+  and reserved entrance details below, with a specification strip and drawing
+  record at right. Dimension chains, serif CAD labels, wall sections, open cabin
+  jambs, rail shoes, sills, slab opening and beams follow the supplied references.
+  Reference-project values are used only in the explicit QA example, not defaults.
   The sheet is A2 landscape by default. Longer supplied descriptions or floor
   schedules enlarge that single sheet without hiding or truncating requirements.
 - Export PDF downloads exactly one page at the drawing's physical dimensions.
@@ -43,5 +49,5 @@ Browser verification uses synthetic data; no production quotation was edited.
 The combined one-page sheet and PDF export are approved for the October 15 v3
 release. An actual exported A2 PDF was checked as one page with all five views,
 complete schedules and Thai text; deployment verification is recorded separately.
-Regression suite: 102 passing tests. The door-clearance test harness now injects
+Regression suite: 103 passing tests. The door-clearance test harness now injects
 the actual landing-door and overhead helpers instead of omitting those imports.

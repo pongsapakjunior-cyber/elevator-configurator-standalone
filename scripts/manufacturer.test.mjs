@@ -90,7 +90,12 @@ test('hoistway section stays continuous without a break mask and retains entered
   const model=manufacturerModel({...fixture,elevatorType}),section=detailedSection(model);
   assert.match(section,/continuous shaft · NTS/);
   assert.doesNotMatch(section,/interrupted travel|<polygon\b/,'No jagged white mask crosses the shaft');
-  for(const x of [1187,1335])assert(section.includes(`<rect x="${x}" y="249" width="3" height="678"`),'Guide rail runs continuously through the former break');
+  const rails=section.match(/<g data-part="guide-rails">([\s\S]*?)<\/g>/)?.[1];
+  assert(rails,'Guide rails remain identifiable');
+  const spans=[...rails.matchAll(/<rect\b[^>]*y="([\d.]+)"[^>]*height="([\d.]+)"/g)].map(match=>({y:Number(match[1]),height:Number(match[2])}));
+  assert.equal(spans.length,2);
+  assert(spans.every(span=>span.height>900),'Both rails run through the full continuous section');
+  assert.deepEqual(spans[0],spans[1]);
   for(const label of ['10 OH 3,700','09 Traveling height 6,800','08 Pit 1,500','Pit + travel + OH 12,000','11 Car H 2,400','12 Door H 2,100'])assert(section.includes(label),label);
   assertSingleSheet(renderManufacturerSheets({...fixture,elevatorType}));
  }
