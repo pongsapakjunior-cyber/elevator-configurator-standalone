@@ -603,6 +603,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     body.clean .decor-preview:has(#decorPreviewImage[data-cabin-preview="ready"]) { grid-template-rows: auto auto auto; }
   }
 </style>
+<link rel="stylesheet" href="./assets/manufacturer.css">
 </head>
 <body class="page-model">
 <header class="stepbar">
@@ -610,6 +611,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <nav class="steps" aria-label="Configurator pages">
     <button class="step" id="modelStep" type="button" aria-pressed="true"><span>Step 1</span>Model &amp; dimensions</button>
     <button class="step" id="decorationStep" type="button" aria-pressed="false"><span>Step 2</span>Decoration</button>
+    <button class="step" id="manufacturerStep" type="button" aria-pressed="false"><span>Factory review</span>Manufacturer</button>
   </nav>
   <span class="stepbar-note">Engineering layout &amp; cabin finish selector</span>
 </header>
@@ -883,6 +885,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div class="toast" id="toast">Link copied</div>
 </div>
 <dl class="spec" id="spec" tabindex="0" aria-label="Configured elevator specifications">
+  <div><dt>Project name</dt><dd data-k="projectTxt">Not entered</dd></div>
   <div><dt>Elevator model</dt><dd data-k="elevatorTypeTxt">MR — machine room</dd></div>
   <div><dt>Capacity</dt><dd data-k="capacity">450 kg / 6 p.</dd></div>
   <div><dt>Speed</dt><dd data-k="speedTxt">1.0 m/s</dd></div>
@@ -901,6 +904,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div data-fh=""><dt>Floor 1 → 2</dt><dd>3,400</dd></div>
   <div data-fh=""><dt>Floor 2 → 3</dt><dd>3,400</dd></div>
 </dl>
+<section class="manufacturer-page" id="manufacturerPage" aria-label="Manufacturer drawings and specifications"></section>
 <script src="./assets/bundle/3d7f3d19-d30f-4ed1-8e49-9da8611ef3c7.js"></script>
 <script type="module">
   import * as THREE from 'three';
@@ -914,6 +918,7 @@ import { createSpeedPlanner } from './assets/speed-planner.mjs';
 import { LANDING_DOOR_OPTIONS, normalizeLandingDoorFinish } from './assets/landing-doors.mjs';
 import { updateCabinPreview } from './assets/cabin-preview.mjs';
 import { inspectOverhead } from './assets/overhead-policy.mjs';
+import { createManufacturerUI, sanitizeManufacturer } from './assets/manufacturer.mjs';
 
 // All sizes in mm (UI units); converted to meters inside.
 const DEFAULTS = {
@@ -1622,6 +1627,12 @@ const FINISH_LIBRARIES = [
   const floorlist = document.getElementById('floorlist'), labelsEl = document.getElementById('labels');
   const ids = ['elevatorType', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'landingDoorFinish'];
   const textIds = ['project', 'liftNo', 'location', 'modelName'];
+  let manufacturerState = null, quotationContext = null, configuredDoorHeight = 2100;
+  const manufacturerUI = createManufacturerUI(document.getElementById('manufacturerPage'), state => {
+    manufacturerState = state;
+    clearTimeout(timer);
+    timer = setTimeout(() => rebuild('manufacturer'), 250);
+  });
   const numericIds = new Set(['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'cabinSelected']);
   const cabinStyleEl = document.getElementById('cabinStyle'), cabinGrid = document.getElementById('cabinGrid');
   cabinStyleEl.innerHTML = CABIN_OPTIONS.map(o => `<option value="${o.id}">${o.id} — ${o.group}</option>`).join('');
@@ -1700,6 +1711,9 @@ const FINISH_LIBRARIES = [
     ids.forEach(id => { const v = document.getElementById(id).value; o[id] = numericIds.has(id) ? +v : v; });
     o.landingDoorFinish = normalizeLandingDoorFinish(o.landingDoorFinish);
     textIds.forEach(id => o[id] = document.getElementById(id).value);
+    o.doorH = configuredDoorHeight;
+    if (manufacturerState) o.manufacturer = manufacturerState;
+    if (quotationContext) o.quotationContext = quotationContext;
     o.floorHeights = o.floorHeightMode === 'individual'
       ? [...floorlist.querySelectorAll('input')].map(i => +i.value)
       : Array(Math.max(1, Math.round(o.floors) - 1)).fill(o.floorToFloor);
@@ -1739,7 +1753,7 @@ const FINISH_LIBRARIES = [
   if (embedded && requestedParentOrigin && referrerOrigin && requestedParentOrigin !== referrerOrigin) {
     console.warn('Configurator bridge disabled: parent origin does not match the embedding page');
   }
-  let activePage = embedded || search.get('page') === 'decoration' ? 'decoration' : 'model';
+  let activePage = search.get('page') === 'manufacturer' ? 'manufacturer' : embedded || search.get('page') === 'decoration' ? 'decoration' : 'model';
   // ?panel=0 hides editing controls for the customer-facing view.
   const clean = search.get('panel') === '0';
   if (clean) document.body.classList.add('clean');
@@ -1749,6 +1763,9 @@ const FINISH_LIBRARIES = [
     const c = search.get('c');
     if (s || c) {
       const o = s ? decodeCompactConfig(s) : decodeConfig(c);
+      if (o.manufacturer) manufacturerState = sanitizeManufacturer(o.manufacturer);
+      if (o.quotationContext && typeof o.quotationContext === 'object') quotationContext = o.quotationContext;
+      if (Number.isFinite(Number(o.doorH)) && Number(o.doorH) > 0) configuredDoorHeight = Number(o.doorH);
       o.landingDoorFinish = normalizeLandingDoorFinish(o.landingDoorFinish);
       if (String(o.copFinish || '').toUpperCase() === 'COP-LISA20') o.copFinish = 'COP-01';
       if (!o.floorHeightMode && Array.isArray(o.floorHeights)) o.floorHeightMode = new Set(o.floorHeights.map(Number)).size > 1 ? 'individual' : 'uniform';
@@ -1822,23 +1839,26 @@ const FINISH_LIBRARIES = [
   };
   const updateUrls = () => {
     if (!currentCode || !currentCompactCode) return;
-    const pagePart = activePage === 'decoration' ? '&page=decoration' : '';
+    const pagePart = activePage === 'manufacturer' ? '&page=manufacturer' : activePage === 'decoration' ? '&page=decoration' : '';
     const embedParams = new URLSearchParams();
     if (embedded) embedParams.set('embed', '1');
     if (embedded && requestedParentOrigin) embedParams.set('parentOrigin', requestedParentOrigin);
     if (embedded && bridgeInstanceId) embedParams.set('instanceId', bridgeInstanceId);
     const embedPart = embedParams.size ? `&${embedParams}` : '';
-    const stateCode = clean ? `s=${currentCompactCode}` : `c=${currentCode}`;
+    const stateCode = clean && activePage !== 'manufacturer' ? `s=${currentCompactCode}` : `c=${currentCode}`;
     history.replaceState(null, '', `?${stateCode}${clean ? '&panel=0' : ''}${pagePart}${embedPart}`);
     canonicalCustomerUrl = `${location.origin}${location.pathname}?s=${currentCompactCode}&panel=0`;
     shareUrl = `${canonicalCustomerUrl}${pagePart}`;
   };
   const setPage = (page) => {
-    activePage = embedded || page === 'decoration' ? 'decoration' : 'model';
+    if (page === 'manufacturer') { clearTimeout(timer); rebuild('manufacturer-view'); }
+    activePage = page === 'manufacturer' ? 'manufacturer' : embedded || page === 'decoration' ? 'decoration' : 'model';
     document.body.classList.toggle('page-model', activePage === 'model');
     document.body.classList.toggle('page-decoration', activePage === 'decoration');
+    document.body.classList.toggle('page-manufacturer', activePage === 'manufacturer');
     document.getElementById('modelStep').setAttribute('aria-pressed', String(activePage === 'model'));
     document.getElementById('decorationStep').setAttribute('aria-pressed', String(activePage === 'decoration'));
+    document.getElementById('manufacturerStep').setAttribute('aria-pressed', String(activePage === 'manufacturer'));
     updateUrls();
     if (activePage === 'model') setTimeout(reframe, 50);
   };
@@ -1923,7 +1943,7 @@ const FINISH_LIBRARIES = [
   };
   const rebuild = (reason = 'user') => {
     const overhead = validateOverheadInput();
-    if (!overhead.valid) { bridgeSnapshot = null; currentCode = ''; currentCompactCode = ''; notesEl.textContent = overhead.error; return false; }
+    if (!overhead.valid) { bridgeSnapshot = null; currentCode = ''; currentCompactCode = ''; notesEl.textContent = overhead.error; manufacturerUI.invalidate(overhead.error); return false; }
     const raw = read();
     const n = Math.min(40, Math.max(2, Math.round(raw.floors || 2)));
     if (floorlist.querySelectorAll('input').length !== n - 1) { syncFloorList(n, raw.floorToFloor); raw.floorHeights = read().floorHeights; }
@@ -1958,9 +1978,11 @@ const FINISH_LIBRARIES = [
     document.getElementById('persons').value = persons;
     const travel = P.floorHeights.reduce((a, b) => a + b, 0);
     syncDecorationUI(P);
+    manufacturerUI.update(raw, notes);
     const set = (k, v) => spec.querySelector(`[data-k="${k}"]`).textContent = v;
     document.getElementById('modelHeading').textContent = P.elevatorType === 'mrl' ? 'MRL traction elevator' : 'Traction elevator';
     set('elevatorTypeTxt', P.elevatorType === 'mrl' ? 'MRL — machine-room-less' : 'MR — machine room');
+    set('projectTxt', raw.project || 'Not entered');
     set('capacity', `${fmt(P.capacity)} kg / ${persons} p.`);
     set('speedTxt', `${P.speed.toFixed(P.speed % 0.5 ? 2 : 1)} m/s`);
     set('car', `${fmt(P.carW)} × ${fmt(P.carD)}`);
@@ -1983,7 +2005,7 @@ const FINISH_LIBRARIES = [
     set('travel', `${fmt(travel)} mm / ${P.floors}`);
     spec.querySelectorAll('[data-fh]').forEach(e => e.remove());
     if (P.floorDimensionDisplay !== 'hide') P.floorHeights.forEach((v, i) => spec.insertAdjacentHTML('beforeend', `<div data-fh><dt>Floor ${i + 1} → ${i + 2}</dt><dd>${fmt(v)}</dd></div>`));
-    currentCode = encodeConfig({ ...raw, floorHeights: P.floorHeights });
+    currentCode = encodeConfig({ ...raw, floorHeights: raw.floorHeights });
     currentCompactCode = encodeCompactConfig({ ...raw, doorH: P.doorH, floorHeights: P.floorHeights });
     updateUrls();
     bridgeSnapshot = makeBridgeSnapshot(raw, P, notes);
@@ -1992,6 +2014,9 @@ const FINISH_LIBRARIES = [
   const applyBridgeConfig = (incoming) => {
     if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return false;
     const has = key => Object.prototype.hasOwnProperty.call(incoming, key);
+    if (has('manufacturer')) manufacturerState = incoming.manufacturer ? sanitizeManufacturer(incoming.manufacturer) : null;
+    if (has('quotationContext')) quotationContext = incoming.quotationContext && typeof incoming.quotationContext === 'object' ? incoming.quotationContext : null;
+    if (has('doorH') && Number.isFinite(Number(incoming.doorH)) && Number(incoming.doorH) > 0) configuredDoorHeight = Number(incoming.doorH);
     if (has('overhead') && !inspectOverhead(incoming.overhead, incoming.elevatorType).valid) {
       document.getElementById('overhead').value = String(incoming.overhead ?? '');
       rebuild('parent-invalid'); return false;
@@ -2090,9 +2115,11 @@ const FINISH_LIBRARIES = [
   });
   document.getElementById('modelStep').onclick = () => setPage('model');
   document.getElementById('decorationStep').onclick = () => setPage('decoration');
+  document.getElementById('manufacturerStep').onclick = () => setPage('manufacturer');
   document.getElementById('reset').onclick = () => {
     ids.forEach(id => document.getElementById(id).value = DEFAULTS[id]);
     textIds.forEach(id => document.getElementById(id).value = '');
+    manufacturerState = null; quotationContext = null; configuredDoorHeight = 2100;
     syncPanels(DEFAULTS.doorPanels);
     syncFloorMode();
     floorlist.innerHTML = '';

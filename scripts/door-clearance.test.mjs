@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../Schneiderlift-live-portfolio/vendor/three.module.min.js';
+import { normalizeLandingDoorFinish } from '../assets/landing-doors.mjs';
+import { inspectOverhead } from '../assets/overhead-policy.mjs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const build=new Function('THREE',html.slice(html.indexOf('const DEFAULTS ='),html.indexOf('// Pose the rig'))+';return buildElevator;')(THREE);
+const build=new Function('THREE','normalizeLandingDoorFinish','inspectOverhead',html.slice(html.indexOf('const DEFAULTS ='),html.indexOf('// Pose the rig'))+';return buildElevator;')(THREE,normalizeLandingDoorFinish,inspectOverhead);
 const pose=new Function('THREE',html.slice(html.indexOf('function poseElevator'),html.indexOf('// Shared motion cycle'))+';return poseElevator;')(THREE);
 for(const [doorType,doorPanels] of [['center',2],['center',4],['side',1],['side',2],['side',3],['side',4]])for(const entrances of [1,2]){
   test(`${doorType}/${doorPanels} panels/${entrances} entrances: door stacks separate and align at every landing`,()=>{
