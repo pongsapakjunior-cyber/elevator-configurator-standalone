@@ -356,6 +356,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   }
 }
 </script>
+<link rel="stylesheet" href="./assets/model-presentation.css">
 <style>
   html, body { margin: 0; height: 100%; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
   body { display: grid; grid-template-columns: 360px 1fr; grid-template-rows: 64px 1fr auto; height: 100vh; overflow: hidden; }
@@ -484,7 +485,11 @@ textarea.input { min-height: 90px; resize: vertical; }
   .product-card[data-finish-category="hallButton"] .product-card-media { height: 210px; }
   .product-card[data-finish-category="cop"] .product-card-media { height: 230px; }
   .product-card[data-finish-category="controller"] .product-card-media { height: 190px; }
+  .product-card[data-finish-category="landingDoor"] .product-card-media { height: 230px; background: #fff; }
+  .product-card[data-finish-category="landingDoor"] img,
+  .selected-finish[data-finish-category="landingDoor"] img { object-fit: contain; object-position: center; filter: none; }
   .product-card img { display: block; width: 100%; height: 100%; object-fit: contain; filter: saturate(1.04) contrast(1.03); transition: transform .2s ease; }
+  .product-card[data-finish-category="cop"] img, .product-card[data-finish-category="hallButton"] img { object-fit: contain; object-position: center; filter: none; }
   .product-card:hover img { transform: scale(1.04); }
   .product-card.none-option .product-card-media { color: var(--color-neutral-600); background: repeating-linear-gradient(135deg, #f7f7f5 0, #f7f7f5 12px, #eeeeeb 12px, #eeeeeb 24px); }
   .product-card.none-option .optional-mark { display: grid; place-items: center; width: 62px; height: 62px; border: 1px dashed var(--color-neutral-500); border-radius: 50%; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -586,6 +591,18 @@ textarea.input { min-height: 90px; resize: vertical; }
   }
 </style>
 
+<link rel="stylesheet" href="./assets/decoration-layout.css">
+<link rel="stylesheet" href="./assets/landing-doors.css">
+<style>
+  .cabin-preview-note { display: none; margin: 0; padding: 7px 10px; border-top: 1px solid var(--color-divider); background: #fff; color: #53615c; font-size: 10px; line-height: 1.4; }
+  #decorPreviewImage[data-cabin-preview="ready"] ~ .cabin-preview-note { display: block; }
+  .decor-preview:has(#decorPreviewImage[data-cabin-preview="ready"]) { grid-template-rows: minmax(0, 1fr) auto auto; }
+  body.clean .decor-preview:has(#decorPreviewImage[data-cabin-preview="ready"]) { grid-template-rows: minmax(0, 1fr) auto; }
+  @media (max-width: 900px) {
+    .decor-preview:has(#decorPreviewImage[data-cabin-preview="ready"]),
+    body.clean .decor-preview:has(#decorPreviewImage[data-cabin-preview="ready"]) { grid-template-rows: auto auto auto; }
+  }
+</style>
 </head>
 <body class="page-model">
 <header class="stepbar">
@@ -651,7 +668,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     </div>
     <div class="row">
       <div class="field"><label for="pit">Pit</label><div class="unit" data-unit="mm"><input class="input" id="pit" name="pit" type="number" min="1200" max="3000" step="50" value="1400" form="f"></div></div>
-      <div class="field"><label for="overhead">Overhead</label><div class="unit" data-unit="mm"><input class="input" id="overhead" name="overhead" type="number" min="3600" max="6000" step="50" value="4300" form="f"></div></div>
+      <div class="field"><label for="overhead">Overhead</label><div class="unit" data-unit="mm"><input class="input" id="overhead" name="overhead" type="number" min="1" max="6000" step="any" value="4300" form="f"></div></div>
     </div>
   </div>
   <div class="group">
@@ -688,6 +705,12 @@ textarea.input { min-height: 90px; resize: vertical; }
         <select class="input" id="cabinStyle"></select>
       </div>
       <div class="decor-field">
+        <label for="landingDoorFinish">Landing door (ประตูชั้น)</label>
+        <select class="input" id="landingDoorFinish">
+          <option value="none">Not selected (optional)</option>
+        </select>
+      </div>
+      <div class="decor-field">
         <label for="ceilingFinish">Ceiling design</label>
         <select class="input" id="ceilingFinish">
           <option value="none">Not selected (optional)</option>
@@ -715,6 +738,7 @@ textarea.input { min-height: 90px; resize: vertical; }
         <select class="input" id="hallButtonFinish">
           <option value="none">Not selected (optional)</option>
           <option value="HB-01">HB-01 — LISE hall call panel</option>
+          <option value="HB-02">HB-02 — stainless hall call panel (customer photo)</option>
         </select>
       </div>
       <div class="decor-field">
@@ -722,6 +746,7 @@ textarea.input { min-height: 90px; resize: vertical; }
         <select class="input" id="copFinish">
           <option value="none">Not selected (optional)</option>
           <option value="COP-01">COP-01 — car operating panel</option>
+          <option value="COP-02">COP-02 — vertical car operating panel (customer photo)</option>
         </select>
       </div>
       <div class="decor-field">
@@ -737,6 +762,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     <dl class="decor-summary">
       <div class="decor-summary-project"><dt>Project name</dt><dd data-decor="project">Not entered</dd></div>
       <div><dt>Cabin</dt><dd data-decor="cabin">SC-C-A</dd></div>
+      <div hidden><dt>Landing door</dt><dd data-decor="landingDoor">Not selected</dd></div>
       <div><dt>Ceiling</dt><dd data-decor="ceiling">Not selected</dd></div>
       <div><dt>Floor</dt><dd data-decor="floor">Not selected</dd></div>
       <div><dt>Handrail</dt><dd data-decor="handrail">Not selected</dd></div>
@@ -754,8 +780,13 @@ textarea.input { min-height: 90px; resize: vertical; }
       <div class="decor-preview">
         <img id="decorPreviewImage" src="./assets/decorations/sc-c-a.webp" alt="SC-C-A Schneider elevator cabin">
         <div class="decor-preview-copy"><b id="decorPreviewTitle">SC-C-A</b><span id="decorPreviewDescription">Hairline stainless walls and doors with a clean, durable passenger-cabin finish.</span></div>
+        <p class="cabin-preview-note">ภาพจำลอง · เปลี่ยนเฉพาะฝ้าและพื้น<br>Illustrative finish preview — not a manufacturing specification.</p>
       </div>
       <div class="selected-finishes" aria-label="Selected decoration finishes">
+        <article class="selected-finish empty" data-finish-category="landingDoor">
+          <div class="selected-finish-media"><span class="finish-empty">Optional</span><img id="selectedLandingDoorImage" alt="" hidden></div>
+          <div class="selected-finish-copy"><span>Selected landing door</span><b id="selectedLandingDoorCode">Not selected</b></div>
+        </article>
         <article class="selected-finish empty" data-finish-category="ceiling">
           <div class="selected-finish-media"><span class="finish-empty">Optional</span><img id="selectedCeilingImage" src="./assets/finishes/ceilings/cd-001.png" alt="" hidden></div>
           <div class="selected-finish-copy"><span>Selected ceiling</span><b id="selectedCeilingCode">Not selected</b></div>
@@ -785,12 +816,16 @@ textarea.input { min-height: 90px; resize: vertical; }
     <div class="decor-library-head"><h2>Cabin collection</h2><a href="https://www.schneiderlift.co.th/#/design" target="_blank" rel="noreferrer">View collection on schneiderlift.co.th ↗</a></div>
     <div class="finish-grid" id="cabinGrid"></div>
     <div class="selection-library">
+      <section aria-labelledby="landingDoorLibraryTitle">
+        <div class="decor-library-head"><div><h2 id="landingDoorLibraryTitle">Landing door collection · ประตูชั้น</h2><p>Select one door finish or leave it unselected. Photos are visual references; confirm the final material and design before manufacture.</p></div></div>
+        <div class="product-grid" id="landingDoorGrid"></div>
+      </section>
       <section aria-labelledby="ceilingLibraryTitle">
         <div class="decor-library-head"><div><h2 id="ceilingLibraryTitle">Ceiling collection</h2><p>Select an individual ceiling design or leave it unselected.</p></div></div>
         <div class="product-grid" id="ceilingGrid"></div>
       </section>
       <section aria-labelledby="floorLibraryTitle">
-        <div class="decor-library-head"><div><h2 id="floorLibraryTitle">Floor collection</h2><p>Select an individual floor pattern or leave it unselected.</p></div></div>
+        <div class="decor-library-head"><div><h2 id="floorLibraryTitle">Floor collection</h2><p>Select an individual floor pattern or Minburi Granite swatch; confirm natural stone with a physical sample.</p></div><div><a href="./assets/finishes/floors/granite-sheet-1.jpg" target="_blank" rel="noreferrer">Granite catalog 1 ↗</a> · <a href="./assets/finishes/floors/granite-sheet-2.jpg" target="_blank" rel="noreferrer">2 ↗</a></div></div>
         <div class="product-grid" id="floorGrid"></div>
       </section>
       <section aria-labelledby="handrailLibraryTitle">
@@ -870,6 +905,15 @@ textarea.input { min-height: 90px; resize: vertical; }
 <script type="module">
   import * as THREE from 'three';
 import { qrcode } from './assets/qrcode.mjs';
+import { analyzeModelSizing } from './assets/model-sizing.mjs';
+import { enhanceModelDetails } from './assets/model-detail.mjs';
+import { arrangeModel } from './assets/model-layout.mjs';
+import { createModelPresentation } from './assets/model-presentation.mjs';
+import { createFloorTrip } from './assets/floor-trip.mjs';
+import { createSpeedPlanner } from './assets/speed-planner.mjs';
+import { LANDING_DOOR_OPTIONS, normalizeLandingDoorFinish } from './assets/landing-doors.mjs';
+import { updateCabinPreview } from './assets/cabin-preview.mjs';
+import { inspectOverhead } from './assets/overhead-policy.mjs';
 
 // All sizes in mm (UI units); converted to meters inside.
 const DEFAULTS = {
@@ -880,13 +924,14 @@ const DEFAULTS = {
   entrances: 1, roping: 1,
   overhead: 4300, pit: 1400,
   floorToFloor: 3400, floorHeightMode: 'uniform', floorDimensionDisplay: 'show', floors: 3, floorHeights: null,
-  cabinStyle: 'SC-C-A', cabinSelected: 0, ceilingFinish: 'none', floorFinish: 'none', handrailFinish: 'none', hallButtonFinish: 'none', copFinish: 'none', controllerFinish: 'none',
+  cabinStyle: 'SC-C-A', cabinSelected: 0, ceilingFinish: 'none', floorFinish: 'none', handrailFinish: 'none', hallButtonFinish: 'none', copFinish: 'none', controllerFinish: 'none', landingDoorFinish: 'none',
   logoUrl: null,
 };
 
 // Clamp user sizes to what physically fits; returns {params, notes[]}
 function normalize(opts = {}) {
   const P = { ...DEFAULTS, ...opts }, notes = [];
+  P.landingDoorFinish = normalizeLandingDoorFinish(P.landingDoorFinish);
   P.elevatorType = P.elevatorType === 'mrl' ? 'mrl' : 'mr';
   if (String(P.copFinish || '').toUpperCase() === 'COP-LISA20') P.copFinish = 'COP-01';
   P.floors = Math.min(40, Math.max(2, Math.round(P.floors || 2)));
@@ -904,8 +949,10 @@ function normalize(opts = {}) {
   P.roping = +P.roping === 2 ? 2 : 1;
   P.floorDimensionDisplay = P.floorDimensionDisplay === 'hide' ? 'hide' : 'show';
   if (P.pit < 1200) { P.pit = 1200; notes.push('Pit raised to 1200 mm minimum'); }
-  const minimumOverhead = P.elevatorType === 'mrl' ? 4000 : 3600;
-  if (P.overhead < minimumOverhead) { P.overhead = minimumOverhead; notes.push(`Overhead raised to ${minimumOverhead} mm minimum for ${P.elevatorType.toUpperCase()}`); }
+  const overhead = inspectOverhead(P.overhead, P.elevatorType);
+  if (!overhead.valid) throw new RangeError(overhead.error);
+  P.overhead = overhead.value;
+  if (overhead.warning) notes.push(overhead.warning);
   // per-floor heights: array of (floors-1) values; fill missing from floorToFloor, clamp each
   const minF = P.doorH + 500, fh = Array.isArray(P.floorHeights) ? P.floorHeights.slice(0, P.floors - 1) : [];
   while (fh.length < P.floors - 1) fh.push(P.floorToFloor);
@@ -941,7 +988,7 @@ function buildElevator(opts = {}) {
   const add = (name, geo, m, x, y, z, rx = 0, ry = 0, rz = 0) => {
     const mesh = new THREE.Mesh(geo, m); mesh.name = name;
     mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = mesh.receiveShadow = true; target.add(mesh); return mesh;
+    mesh.castShadow = mesh.receiveShadow = false; target.add(mesh); return mesh;
   };
   const rig = { hoistDoors: [], carDoors: [], ropesCar: [], ropesCwt: [], rotors: [], indicators: [] };
   const box = (n, m, w, h, d, x, y, z) => add(n, new THREE.BoxGeometry(w, h, d), m, x, y, z);
@@ -960,7 +1007,7 @@ function buildElevator(opts = {}) {
   const floors = [PIT]; for (let i = 0; i < N - 1; i++) floors.push(floors[i] + FH[i]);
   const TOP = floors[N - 1] + OH;
   const carIdx = Math.min(1, N - 1), yc = floors[carIdx];
-  const fz = zF - 0.21;                 // cab front face (door side)
+  const fz = P.entrances === 2 ? cd / 2 : zF - 0.21; // equal entrance gaps for through-car; cabin size unchanged
   const zc = fz - cd / 2;               // car centre
   const cz = zB + 0.14;                 // counterweight centre
   const cwtW = Math.min(0.86, sw * 0.5);
@@ -968,6 +1015,13 @@ function buildElevator(opts = {}) {
   const pw = dw / 2, open = pw;         // door panel width / open travel
   const twoOne = P.roping === 2;
   const isMRL = P.elevatorType === 'mrl';
+  // Separate the car and landing leaf stacks inside the existing entrance gap.
+  const doorLayers = P.doorType === 'center' ? Math.ceil(P.doorPanels / 2) : P.doorPanels;
+  const entranceGap = zF - fz;
+  const doorPitch = Math.min(0.04, Math.max(0.008, (entranceGap - 0.08) / Math.max(2, 2 * (doorLayers - 1))));
+  const doorSkin = Math.min(0.024, doorPitch * 0.65);
+  const carLeafOffset = tier => 0.02 + tier * doorPitch;
+  const landingLeafOffset = tier => 0.025 + (doorLayers - 1 - tier) * doorPitch;
   // panel layout: closed centre x0, travel at full open, width w, nesting tier
   const panelSet = (() => {
     const out = [];
@@ -1006,8 +1060,8 @@ function buildElevator(opts = {}) {
       box(`rear_landing_sill_${i}`, M.stainless, dw + 0.2, 0.05, 0.1, 0, y + 0.025, zB + 0.05);
       const openAtCar = i === carIdx ? 1 : 0;
       panelSet.forEach((p, j) => {
-        const zp = zB + 0.08 + p.tier * 0.035, x = p.x0 + p.travel * openAtCar;
-        rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: 0, mesh: box(`rear_hoistway_door_${i}_${j}`, M.stainless, p.w, dh, 0.03, x, y + dh / 2, zp) });
+        const zp = zB + landingLeafOffset(p.tier), x = p.x0 + p.travel * openAtCar;
+        rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: 0, mesh: box(`rear_hoistway_door_${i}_${j}`, M.stainless, p.w, dh, doorSkin, x, y + dh / 2, zp) });
       });
     });
   }
@@ -1049,8 +1103,8 @@ function buildElevator(opts = {}) {
     box(`landing_sill_${i}`, M.stainless, dw + 0.2, 0.05, 0.1, 0, y + 0.025, zF - 0.05);
     box(`sill_support_${i}`, M.steel, dw + 0.2, 0.1, 0.06, 0, y - 0.05, zF - 0.07);
     panelSet.forEach((p, j) => {
-      const zp = zF - 0.08 - p.tier * 0.035, x = p.x0 + p.travel * o;
-      rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: 0, mesh: box(`hoistway_door_${i}_${j}`, M.stainless, p.w, dh, 0.03, x, y + dh / 2, zp) });
+      const zp = zF - landingLeafOffset(p.tier), x = p.x0 + p.travel * o;
+      rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: 0, mesh: box(`hoistway_door_${i}_${j}`, M.stainless, p.w, dh, doorSkin, x, y + dh / 2, zp) });
       rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: 0, mesh: box(`door_hanger_${i}_${j}`, M.steel, Math.max(0.12, p.w - 0.05), 0.06, 0.02, x, y + dh + 0.04, zp - 0.02) });
       [-0.3, 0.3].forEach((k, r) => rig.hoistDoors.push({ floor: i, x0: p.x0, travel: p.travel, dx: k * p.w, mesh: cylZ(`door_roller_${i}_${j}_${r}`, M.cast, 0.045, 0.03, x + k * p.w, y + dh + 0.16, zp - 0.02, 20) }));
     });
@@ -1131,8 +1185,8 @@ function buildElevator(opts = {}) {
     box('cab_rear_transom', M.stainless, cw, CH - dh, 0.015, 0, yc + dh + (CH - dh) / 2, zc - cd / 2 - 0.0075);
     box('cab_rear_sill', M.stainless, dw + 0.3, 0.05, 0.1, 0, yc + 0.025, zc - cd / 2 - 0.03);
     panelSet.forEach((p, j) => {
-      const zp = zc - cd / 2 - 0.035 - p.tier * 0.035, x = p.x0 + p.travel;
-      rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box(`rear_car_door_${j}`, M.stainless, p.w, dh + 0.05, 0.03, x, yc + (dh + 0.05) / 2, zp) });
+      const zp = zc - cd / 2 - carLeafOffset(p.tier), x = p.x0 + p.travel;
+      rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box(`rear_car_door_${j}`, M.stainless, p.w, dh, doorSkin, x, yc + dh / 2, zp) });
     });
   }
   box('cab_wall_left', M.stainless, 0.015, CH, cd, -(cw / 2 + 0.0075), yc + CH / 2, zc);
@@ -1164,8 +1218,8 @@ function buildElevator(opts = {}) {
   box('cab_transom_indicator', M.rubber, 0.24, 0.1, 0.01, 0, yc + dh + (CH - dh) / 2, fz - 0.02);
   box('cab_transom_indicator_lamp', M.lamp, 0.18, 0.05, 0.004, 0, yc + dh + (CH - dh) / 2, fz - 0.026);
   panelSet.forEach((p, j) => {
-    const zp = fz + 0.035 + p.tier * 0.035, x = p.x0 + p.travel;
-    rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box(`car_door_${j}`, M.stainless, p.w, dh + 0.05, 0.03, x, yc + (dh + 0.05) / 2, zp) });
+    const zp = fz + carLeafOffset(p.tier), x = p.x0 + p.travel;
+    rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box(`car_door_${j}`, M.stainless, p.w, dh, doorSkin, x, yc + dh / 2, zp) });
     rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box(`car_door_hanger_${j}`, M.steel, Math.max(0.12, p.w - 0.05), 0.06, 0.02, x, yc + dh + 0.1, zp + 0.02) });
     [-0.3, 0.3].forEach((k, r) => rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: k * p.w, mesh: cylZ(`car_door_roller_${j}_${r}`, M.cast, 0.045, 0.03, x + k * p.w, yc + dh + 0.2, zp + 0.02, 20) }));
     // door gib at the sill and, on the leading panels, a light-curtain safety edge
@@ -1176,7 +1230,7 @@ function buildElevator(opts = {}) {
     }
   });
   // door clutch rides on the first (fast) car door panel, facing the landing door
-  { const p = panelSet[0]; rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box('car_door_clutch', M.steel, 0.16, 0.5, 0.04, p.x0 + p.travel, yc + 1.5, fz + 0.035 + p.tier * 0.035 + 0.035) }); }
+  { const p = panelSet[0]; rig.carDoors.push({ x0: p.x0, travel: p.travel, dx: 0, mesh: box('car_door_clutch', M.steel, 0.16, 0.5, 0.025, p.x0 + p.travel, yc + 1.5, fz + carLeafOffset(p.tier) + doorSkin / 2 + 0.015) }); }
   box('car_door_track', M.galv, P.doorType === 'center' ? 2 * dw + 0.3 : 2.2 * dw + 0.3, 0.03, 0.03, P.doorType === 'center' ? 0 : -dw * 0.55, yc + dh + 0.2, fz + 0.075);
   box('car_door_operator', M.steel, Math.min(cw, dw + 0.6), 0.3, 0.25, 0, yc + CH + 0.2, fz - 0.1);
   cylX('car_door_motor', M.cast, 0.09, 0.14, -(dw / 2 + 0.2), yc + CH + 0.25, fz - 0.1, 24);
@@ -1209,11 +1263,8 @@ function buildElevator(opts = {}) {
   [-1, 1].forEach(s => [cy - 1.2, cy + 1.2].forEach((y, i) =>
     box(`cwt_guide_shoe_${s < 0 ? 'l' : 'r'}_${i}`, M.cast, 0.16, 0.16, 0.08, s * (cwtW / 2 + 0.1), y, cz - 0.08)));
   target = g;
-  const scW = cwtW + 0.5, scZ = cz + 0.15;
-  box('cwt_screen_top', M.galv, scW, 0.04, 0.03, 0, 2.3, scZ);
-  box('cwt_screen_bottom', M.galv, scW, 0.04, 0.03, 0, 0.32, scZ);
-  [-1, 1].forEach((s, i) => box(`cwt_screen_post_${i}`, M.galv, 0.04, 2.0, 0.04, s * scW / 2, 1.31, scZ));
-  for (let x = -scW / 2 + 0.1, i = 0; x < scW / 2 - 0.05; x += 0.1, i++) box(`cwt_screen_bar_${i}`, M.galv, 0.008, 1.96, 0.008, x, 1.31, scZ);
+  // The customer visualization omits the pit-screen fence for clear inspection.
+  // This display choice does not specify installation safety equipment.
 
   // ---- hoist ropes: 1:1 (direct) or 2:1 (car and counterweight hang on diverter sheaves)
   const carSheaveY = yc + CH + 0.95, cwtSheaveY = cy + 1.7;
@@ -1344,7 +1395,7 @@ function poseElevator(g, carY, doorAmt, doorFloor, brakeOpen = 0) {
   r.ropesCar.forEach(o => { const t = o.topY ?? r.ys, l = o.len - dy; o.mesh.scale.y = l / o.len; o.mesh.position.y = t - l / 2; });
   r.ropesCwt.forEach(o => { const t = o.topY ?? r.ys, l = o.len + dy; o.mesh.scale.y = l / o.len; o.mesh.position.y = t - l / 2; });
   const ang = -dy / r.R * (twoOne ? 2 : 1);
-  r.rotors.forEach(m => { if (!m.userData.rot0) m.userData.rot0 = m.rotation.clone(); m.rotation.copy(m.userData.rot0); m.rotateY(ang); });
+  r.rotors.forEach(m => { if (!m.userData.rot0) m.userData.rot0 = m.rotation.clone(); m.rotation.copy(m.userData.rot0); if (/^(sheave_spoke_[ab]|brake_disc_vent)$/.test(m.name)) m.rotateX(ang); else m.rotateY(ang); });
   r.carDoors.forEach(o => { o.mesh.position.x = o.x0 + o.travel * doorAmt + (o.dx || 0); });
   r.hoistDoors.forEach(o => { o.mesh.position.x = o.x0 + (o.floor === doorFloor ? o.travel * doorAmt : 0) + (o.dx || 0); });
   r.indicators.forEach(o => { o.mat.emissiveIntensity = o.floor === doorFloor ? 1.2 : 0.08; });
@@ -1353,7 +1404,7 @@ function poseElevator(g, carY, doorAmt, doorFloor, brakeOpen = 0) {
 }
 
 // Shared motion cycle: returns a pose {y, door, doorFloor, brake} for time t; visits every floor up then down.
-function makeCycle(floors, speed = 1.0) {
+function makeCycle(floors, speed = 1.0, startFloor = 0) {
   const N = floors.length, order = [];
   for (let i = 0; i < N; i++) order.push(i);
   for (let i = N - 2; i > 0; i--) order.push(i);
@@ -1365,7 +1416,7 @@ function makeCycle(floors, speed = 1.0) {
     const tc = (dist - 2 * da) / speed, T = 2 * ta + tc;
     return { T, at: (tt) => tt < ta ? 0.5 * ACC * tt * tt : tt < ta + tc ? da + speed * (tt - ta) : dist - 0.5 * ACC * (T - tt) ** 2 };
   };
-  let leg = 0, t = 0;
+  let leg = Math.max(0, order.indexOf(startFloor)), t = 0;
   return {
     step(dt) {
       t += dt;
@@ -1498,10 +1549,18 @@ const CABIN_OPTIONS = [
 
 const CEILING_OPTIONS = ['CD-001', 'CD-003', 'CD-004', 'CD-005', 'CD-010', 'CD-012', 'CD-013', 'CD-014', 'CD-016', 'CD-018', 'CD-019', 'CD-020']
   .map(id => ({ id, group: 'Ceiling design' }));
+// As with FL/HM, each supplier-catalog swatch is split into its own PNG asset.
+const GRANITE_OPTIONS = Array.from({ length: 35 }, (_, index) => {
+  const sheet = index < 20 ? 1 : 2;
+  const cell = index < 20 ? index : index - 20;
+  const row = Math.floor(cell / 4), col = cell % 4;
+  return { id: `MG-${String(index + 1).padStart(2, '0')}`, group: `Minburi Granite · catalog ${sheet}`, sheet, row, col };
+});
 const FLOOR_OPTIONS = [
   ...['FL-020', 'FL-021', 'FL-022', 'FL-023', 'FL-024', 'FL-025', 'FL-026', 'FL-027', 'FL-009', 'FL-010', 'FL-012'].map(id => ({ id, group: 'Elevator floor' })),
   ...['HM-776', 'HM-780', 'HM-785', 'HM-798', 'HM-7110', 'HM-7112', 'HM-7113', 'HM-702', 'HM-727'].map(id => ({ id, group: 'Marble pattern' })),
   ...['FL-013', 'FL-014', 'FL-015', 'FL-016', 'FL-017'].map(id => ({ id, group: 'Home lift floor' })),
+  ...GRANITE_OPTIONS,
 ];
 const HANDRAIL_OPTIONS = [
   { id: 'HR-05', group: 'Round stainless' },
@@ -1517,9 +1576,11 @@ const HANDRAIL_OPTIONS = [
 ];
 const HALL_BUTTON_OPTIONS = [
   { id: 'HB-01', group: 'LISE hall call panel' },
+  { id: 'HB-02', group: 'Stainless hall call panel · customer photo' },
 ];
 const COP_OPTIONS = [
   { id: 'COP-01', group: 'Car operating panel' },
+  { id: 'COP-02', group: 'Vertical COP · blank floor buttons' },
 ];
 const CONTROLLER_OPTIONS = [
   { id: 'LISA10', group: 'LISA10 single controller board' },
@@ -1531,6 +1592,7 @@ const finishFileName = (id, library) => library.category === 'controller'
   : `${id.toLowerCase()}${library.category === 'handrail' ? '-straight-v2' : ''}.png`;
 const finishAssetPath = (library, id) => `./assets/finishes/${library.folder}/${finishFileName(id, library)}`;
 const FINISH_LIBRARIES = [
+  { category: 'landingDoor', label: 'landing door', selectId: 'landingDoorFinish', gridId: 'landingDoorGrid', folder: 'landing-doors', options: LANDING_DOOR_OPTIONS },
   { category: 'ceiling', selectId: 'ceilingFinish', gridId: 'ceilingGrid', folder: 'ceilings', options: CEILING_OPTIONS },
   { category: 'floor', selectId: 'floorFinish', gridId: 'floorGrid', folder: 'floors', options: FLOOR_OPTIONS },
   { category: 'handrail', selectId: 'handrailFinish', gridId: 'handrailGrid', folder: 'handrails-v2', options: HANDRAIL_OPTIONS },
@@ -1542,18 +1604,38 @@ const FINISH_LIBRARIES = [
   const stage = document.querySelector('three-d-stage');
   await stage.ready;
   stage.shadowRoot.querySelectorAll('.toolbar,.note').forEach(e => e.style.display = 'none');
+  const presentation = createModelPresentation(THREE, stage);
+  const speedPlanner = createSpeedPlanner(document.getElementById('speed').closest('.field'));
   const form = document.getElementById('f'), notesEl = document.getElementById('notes'), spec = document.getElementById('spec');
+  const overheadNotice = document.createElement('p'); overheadNotice.className = 'notes'; overheadNotice.id = 'overhead-notice'; overheadNotice.setAttribute('role', 'status');
+  document.querySelector('.decor-intro').after(overheadNotice);
+  const overheadSpecNotice = document.createElement('div'); overheadSpecNotice.innerHTML = '<dt>Overhead review</dt><dd></dd>'; overheadSpecNotice.id = 'overhead-spec-notice'; spec.append(overheadSpecNotice);
+  const validateOverheadInput = () => {
+    const input = document.getElementById('overhead'), result = inspectOverhead(input.value, document.getElementById('elevatorType').value);
+    input.setCustomValidity(result.error); input.setAttribute('aria-invalid', String(!result.valid));
+    const message = result.error || result.warning;
+    overheadNotice.textContent = message; overheadNotice.hidden = !message;
+    overheadSpecNotice.querySelector('dd').textContent = message; overheadSpecNotice.hidden = !message;
+    for (const id of ['share', 'qr', 'shareDecoration', 'qrDecoration', 'qrCopy', 'qrDownload']) document.getElementById(id).disabled = !result.valid;
+    return result;
+  };
   const floorlist = document.getElementById('floorlist'), labelsEl = document.getElementById('labels');
-  const ids = ['elevatorType', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'];
+  const ids = ['elevatorType', 'capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'cabinSelected', 'ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'landingDoorFinish'];
   const textIds = ['project', 'liftNo', 'location', 'modelName'];
   const numericIds = new Set(['capacity', 'speed', 'carW', 'carD', 'carH', 'doorW', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'pit', 'overhead', 'floors', 'floorToFloor', 'cabinSelected']);
   const cabinStyleEl = document.getElementById('cabinStyle'), cabinGrid = document.getElementById('cabinGrid');
   cabinStyleEl.innerHTML = CABIN_OPTIONS.map(o => `<option value="${o.id}">${o.id} — ${o.group}</option>`).join('');
   cabinStyleEl.value = DEFAULTS.cabinStyle;
+  const graniteGroup = document.createElement('optgroup');
+  graniteGroup.label = 'Minburi Granite — one stone per card';
+  GRANITE_OPTIONS.forEach(option => graniteGroup.appendChild(new Option(`${option.id} — ${option.group}`, option.id)));
+  document.getElementById('floorFinish').append(graniteGroup);
+  LANDING_DOOR_OPTIONS.forEach(option => document.getElementById('landingDoorFinish').add(new Option(`${option.id} — ${option.group}`, option.id)));
   FINISH_LIBRARIES.forEach(library => {
     const grid = document.getElementById(library.gridId);
-    const optionalCard = `<button class="product-card none-option" type="button" data-finish-category="${library.category}" data-finish="none" aria-pressed="false"><span class="product-card-media"><span class="optional-mark">Optional</span></span><span>Not selected</span><small>No ${library.category} specified</small></button>`;
-    const productCards = library.options.map(option => `<button class="product-card" type="button" data-finish-category="${library.category}" data-finish="${option.id}" aria-pressed="false"><span class="product-card-media"><img src="${finishAssetPath(library, option.id)}" alt="${option.id} ${library.category} design" loading="lazy"></span><span>${option.id}</span><small>${option.group}</small></button>`).join('');
+    const label = library.label || library.category;
+    const optionalCard = `<button class="product-card none-option" type="button" data-finish-category="${library.category}" data-finish="none" aria-pressed="false"><span class="product-card-media"><span class="optional-mark">Optional</span></span><span>Not selected</span><small>No ${label} specified</small></button>`;
+    const productCards = library.options.map(option => `<button class="product-card" type="button" data-finish-category="${library.category}" data-finish="${option.id}" aria-pressed="false"><span class="product-card-media"><img src="${finishAssetPath(library, option.id)}" alt="${option.id} ${label} design" loading="lazy"></span><span>${option.id}</span><small>${option.group}</small></button>`).join('');
     grid.innerHTML = optionalCard + productCards;
   });
   cabinGrid.innerHTML = CABIN_OPTIONS.map(o => `<button class="finish-card" type="button" data-cabin="${o.id}" aria-pressed="false"><img src="./assets/decorations/${o.image}" alt="${o.id} Schneider elevator cabin" loading="lazy"><span>${o.id}</span><small>${o.group} · ${o.description}</small></button>`).join('');
@@ -1574,6 +1656,8 @@ const FINISH_LIBRARIES = [
     'doorType', 'doorPanels', 'entrances', 'roping', 'shaftW', 'shaftD', 'overhead', 'pit', 'floors',
     'floorToFloor', 'floorHeightMode', 'floorDimensionDisplay', 'cabinStyle', 'ceilingFinish', 'floorFinish',
     'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'floorHeights', 'cabinSelected', 'elevatorType',
+    // Append only: existing v2 customer QR codes rely on the preceding indexes.
+    'landingDoorFinish',
   ];
   const compactConfigValue = (key, source) => {
     const value = source[key];
@@ -1583,14 +1667,15 @@ const FINISH_LIBRARIES = [
     if (key === 'floorHeights') return source.floorHeightMode === 'individual' ? value : 0;
     if (key === 'cabinSelected') return value ? 1 : 0;
     if (key === 'elevatorType') return value === 'mrl' ? 'l' : 'r';
-    if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'].includes(key)) {
+    if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'landingDoorFinish'].includes(key)) {
       return !value || value === 'none' ? 0 : value;
     }
     return value ?? 0;
   };
   const encodeCompactConfig = (value) => {
     const source = { ...DEFAULTS, project: '', modelName: '', ...value };
-    return encodeConfig([2, ...COMPACT_CONFIG_KEYS.map(key => compactConfigValue(key, source))]);
+    const keys = normalizeLandingDoorFinish(source.landingDoorFinish) === 'none' ? COMPACT_CONFIG_KEYS.slice(0, -1) : COMPACT_CONFIG_KEYS;
+    return encodeConfig([2, ...keys.map(key => compactConfigValue(key, source))]);
   };
   const decodeCompactConfig = (value) => {
     const packed = decodeConfig(value);
@@ -1603,7 +1688,7 @@ const FINISH_LIBRARIES = [
       else if (key === 'floorHeightMode') decoded = decoded === 'i' ? 'individual' : 'uniform';
       else if (key === 'floorDimensionDisplay') decoded = decoded === 'h' ? 'hide' : 'show';
       else if (key === 'elevatorType') decoded = decoded === 'l' ? 'mrl' : 'mr';
-      else if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish'].includes(key) && decoded === 0) decoded = 'none';
+      else if (['ceilingFinish', 'floorFinish', 'handrailFinish', 'hallButtonFinish', 'copFinish', 'controllerFinish', 'landingDoorFinish'].includes(key) && decoded === 0) decoded = 'none';
       else if (key === 'floorHeights' && decoded === 0) return;
       else if ((key === 'project' || key === 'modelName') && decoded === 0) decoded = '';
       output[key] = decoded;
@@ -1613,6 +1698,7 @@ const FINISH_LIBRARIES = [
   const read = () => {
     const o = {};
     ids.forEach(id => { const v = document.getElementById(id).value; o[id] = numericIds.has(id) ? +v : v; });
+    o.landingDoorFinish = normalizeLandingDoorFinish(o.landingDoorFinish);
     textIds.forEach(id => o[id] = document.getElementById(id).value);
     o.floorHeights = o.floorHeightMode === 'individual'
       ? [...floorlist.querySelectorAll('input')].map(i => +i.value)
@@ -1663,6 +1749,7 @@ const FINISH_LIBRARIES = [
     const c = search.get('c');
     if (s || c) {
       const o = s ? decodeCompactConfig(s) : decodeConfig(c);
+      o.landingDoorFinish = normalizeLandingDoorFinish(o.landingDoorFinish);
       if (String(o.copFinish || '').toUpperCase() === 'COP-LISA20') o.copFinish = 'COP-01';
       if (!o.floorHeightMode && Array.isArray(o.floorHeights)) o.floorHeightMode = new Set(o.floorHeights.map(Number)).size > 1 ? 'individual' : 'uniform';
       if (o.doorType) { document.getElementById('doorType').value = o.doorType; syncPanels(+o.doorPanels || 2); }
@@ -1673,6 +1760,8 @@ const FINISH_LIBRARIES = [
   syncFloorMode();
   function syncFloorListFrom(arr) { floorlist.innerHTML = ''; arr.forEach((rawValue, i) => { const v = Number(rawValue); if (!Number.isFinite(v)) return; floorlist.insertAdjacentHTML('beforeend', `<div class="field"><label for="fh${i}">Floor ${i + 1} → ${i + 2}</label><div class="unit" data-unit="mm"><input class="input" id="fh${i}" type="number" min="2600" max="8000" step="50" value="${v}" form="f"></div></div>`); }); }
   let model = null, dims = null, cycle = null, running = true, showDims = true, timer, shareUrl = location.href, canonicalCustomerUrl = location.href, currentCode = '', currentCompactCode = '';
+  let trip = null, currentPose = null, manualTrip = false, queuedFloor = null;
+  const updateTravel = () => presentation.updateTravel(currentPose, {targetIndex:manualTrip&&trip?.active?trip.targetIndex:queuedFloor,pendingIndex:manualTrip?trip?.pendingIndex:null,running});
   let bridgeReady = false, bridgeSnapshot = null, lastBridgeCode = '';
   const fmt = (n) => n.toLocaleString('en-US');
   const syncDecorationUI = (config = read()) => {
@@ -1680,6 +1769,9 @@ const FINISH_LIBRARIES = [
     if (cabinStyleEl.value !== option.id) cabinStyleEl.value = option.id;
     document.getElementById('decorPreviewImage').src = `./assets/decorations/${option.image}`;
     document.getElementById('decorPreviewImage').alt = `${option.id} Schneider elevator cabin`;
+    void updateCabinPreview(document.getElementById('decorPreviewImage'), { ...config, cabinStyle: option.id }, { assetBase: new URL('./assets/', location.href).href }).catch(error => {
+      console.warn('Cabin finish preview unavailable; retaining the original cabin image.', error);
+    });
     document.getElementById('decorPreviewTitle').textContent = `${option.id} · ${option.group}`;
     document.getElementById('decorPreviewDescription').textContent = option.description;
     cabinGrid.querySelectorAll('[data-cabin]').forEach(card => {
@@ -1726,6 +1818,7 @@ const FINISH_LIBRARIES = [
     syncOptionalSummary('hallButton', config.hallButtonFinish);
     syncOptionalSummary('cop', config.copFinish);
     syncOptionalSummary('controller', config.controllerFinish);
+    syncOptionalSummary('landingDoor', config.landingDoorFinish);
   };
   const updateUrls = () => {
     if (!currentCode || !currentCompactCode) return;
@@ -1758,6 +1851,7 @@ const FINISH_LIBRARIES = [
       code: option.id,
       label: option.group,
       imageUrl: new URL(finishAssetPath(library, option.id), location.href).href,
+      ...(option.sheet ? { catalog: { sheet: option.sheet, row: option.row + 1, column: option.col + 1 } } : {}),
     };
   };
   const makeBridgeSnapshot = (raw, normalized, warnings) => {
@@ -1794,6 +1888,7 @@ const FINISH_LIBRARIES = [
         hallButton: bridgeFinishMetadata('hallButton', normalized.hallButtonFinish),
         cop: bridgeFinishMetadata('cop', normalized.copFinish),
         controller: bridgeFinishMetadata('controller', normalized.controllerFinish),
+        landingDoor: bridgeFinishMetadata('landingDoor', normalized.landingDoorFinish),
       },
       warnings: [...warnings],
     };
@@ -1814,14 +1909,7 @@ const FINISH_LIBRARIES = [
   };
   // fit the tower plus its dimension lines to the current viewport aspect
   const reframe = () => {
-    if (!model) return;
-    const cam = stage._camera, ctl = stage._controls, top = model.userData.rig.top + 0.3;
-    const r = Math.hypot(top / 2 + 1.5, model.userData.rig.dims.W + 2.2), vf = cam.fov * Math.PI / 360, hf = Math.atan(Math.tan(vf) * cam.aspect);
-    const phoneScale = window.matchMedia('(max-width: 900px)').matches ? 0.62 : 1.05;
-    const dist = r / Math.sin(Math.min(vf, hf)) * phoneScale;
-    ctl.target.set(0.3, top / 2, 0);
-    cam.position.set(ctl.target.x + dist * 0.5, top / 2 + dist * 0.3, ctl.target.z + dist * 0.81);
-    ctl.update();
+    presentation.reframe();
   };
   let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(reframe, 120); }).observe(document.querySelector('.viewport'));
   // one input per floor-to-floor gap; keeps values the user already typed
@@ -1834,26 +1922,38 @@ const FINISH_LIBRARIES = [
     }
   };
   const rebuild = (reason = 'user') => {
+    const overhead = validateOverheadInput();
+    if (!overhead.valid) { bridgeSnapshot = null; currentCode = ''; currentCompactCode = ''; notesEl.textContent = overhead.error; return false; }
     const raw = read();
     const n = Math.min(40, Math.max(2, Math.round(raw.floors || 2)));
     if (floorlist.querySelectorAll('input').length !== n - 1) { syncFloorList(n, raw.floorToFloor); raw.floorHeights = read().floorHeights; }
     const { params: P, notes } = normalize({ ...raw, logoUrl: './assets/schneider-logo.jpg' });
-    const overheadInput = document.getElementById('overhead');
-    overheadInput.min = P.elevatorType === 'mrl' ? '4000' : '3600';
-    if (raw.overhead !== P.overhead) { raw.overhead = P.overhead; overheadInput.value = String(P.overhead); }
     notesEl.innerHTML = notes.map(n => `<span>${n}</span>`).join('');
     const old = model;
     // build the full stack: one modelled floor per stop
     model = buildElevator(P);
+    const modelReference = analyzeModelSizing(P);
+    enhanceModelDetails(THREE, model);
+    arrangeModel(THREE, model, modelReference);
+    presentation.beforeBuild();
     stage.setObject(model);
-    old?.traverse(o => { o.geometry?.dispose?.(); });
+    old?.userData.disposeModelDetails?.();
+    const releasedMaterials = new Set(), releasedTextures = new Set();
+    old?.traverse(o => { o.geometry?.dispose?.(); for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {if(!m || m.userData.sharedPresentation || releasedMaterials.has(m))continue;releasedMaterials.add(m);for(const value of Object.values(m))if(value?.isTexture&&!releasedTextures.has(value)){value.dispose();releasedTextures.add(value);}m.dispose?.();} });
     dims?.parent?.remove(dims);
     dims = buildDimensions(model, labelsEl, { travel: P.floorHeights.reduce((a, b) => a + b, 0), stops: P.floors, showFloorDimensions: P.floorDimensionDisplay !== 'hide' });
     dims.visible = showDims; labelsEl.style.display = showDims ? '' : 'none';
     stage._scene.add(dims);
-    // frame the whole tower plus dimension lines for the current viewport aspect
-    reframe();
+    presentation.attach(model, dims, labelsEl);
+    presentation.setDimensions(showDims);
     cycle = makeCycle(model.userData.rig.floors, P.speed);
+    speedPlanner.refresh(P);
+    trip = createFloorTrip(model.userData.rig.floors, P.speed);
+    manualTrip = false; queuedFloor = null; currentPose = cycle.step(0);
+    poseElevator(model, currentPose.y, currentPose.door, currentPose.doorFloor, currentPose.brake);
+    updateTravel();
+    // Fit the actual starting pose, including when rebuilding in Cabin/Door view.
+    reframe();
     const persons = Math.max(1, Math.round(P.capacity / 75));
     document.getElementById('persons').value = persons;
     const travel = P.floorHeights.reduce((a, b) => a + b, 0);
@@ -1892,6 +1992,10 @@ const FINISH_LIBRARIES = [
   const applyBridgeConfig = (incoming) => {
     if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return false;
     const has = key => Object.prototype.hasOwnProperty.call(incoming, key);
+    if (has('overhead') && !inspectOverhead(incoming.overhead, incoming.elevatorType).valid) {
+      document.getElementById('overhead').value = String(incoming.overhead ?? '');
+      rebuild('parent-invalid'); return false;
+    }
     const setSelect = (element, value) => {
       const wanted = String(value);
       if ([...element.options].some(option => option.value === wanted)) element.value = wanted;
@@ -1906,10 +2010,11 @@ const FINISH_LIBRARIES = [
       const element = document.getElementById(id);
       if (!element) return;
       if (element.tagName === 'SELECT') {
-        setSelect(element, incoming[id]);
+        setSelect(element, id === 'landingDoorFinish' ? normalizeLandingDoorFinish(incoming[id]) : incoming[id]);
         return;
       }
       if (numericIds.has(id)) {
+        if (id === 'overhead') { element.value = String(inspectOverhead(incoming[id], incoming.elevatorType).value); return; }
         let value = Number(incoming[id]);
         if (!Number.isFinite(value)) return;
         const min = Number(element.min), max = Number(element.max);
@@ -1950,7 +2055,9 @@ const FINISH_LIBRARIES = [
   });
   // Inputs span both pages, so listen once at the document shell.
   document.body.addEventListener('input', (e) => {
+    if(e.target.closest('[data-planning-only]'))return;
     clearTimeout(timer);
+    if (e.target.id === 'overhead') validateOverheadInput();
     if (e.target.id === 'floorToFloor' && document.getElementById('floorHeightMode').value === 'uniform') floorlist.querySelectorAll('input').forEach(i => i.value = e.target.value);
     // add/remove floor boxes the moment the stop count changes
     if (e.target.id === 'floors') { const n = Math.min(40, Math.max(2, Math.round(+e.target.value || 2))); syncFloorList(n, +document.getElementById('floorToFloor').value); }
@@ -1958,6 +2065,7 @@ const FINISH_LIBRARIES = [
     timer = setTimeout(rebuild, 250);
   });
   document.body.addEventListener('change', (e) => {
+    if(e.target.closest('[data-planning-only]'))return;
     if (e.target.tagName !== 'SELECT') return;
     if (e.target.id === 'cabinStyle') document.getElementById('cabinSelected').value = '1';
     if (e.target.id === 'doorType') syncPanels();
@@ -2042,10 +2150,25 @@ const FINISH_LIBRARIES = [
     document.body.appendChild(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  dimBtn.onclick = () => { showDims = !showDims; dimBtn.textContent = showDims ? 'Dimensions on' : 'Dimensions off'; dimBtn.setAttribute('aria-pressed', String(showDims)); if (dims) dims.visible = showDims; labelsEl.style.display = showDims ? '' : 'none'; };
+  dimBtn.onclick = () => { showDims = !showDims; dimBtn.textContent = showDims ? 'Dimensions on' : 'Dimensions off'; dimBtn.setAttribute('aria-pressed', String(showDims)); presentation.setDimensions(showDims); };
   const btn = document.getElementById('play'), btnView = document.getElementById('playView');
-  const setRun = (v) => { running = v; [btn, btnView].forEach(b => { b.textContent = v ? 'Pause' : 'Play'; b.setAttribute('aria-pressed', String(v)); }); };
-  btn.onclick = btnView.onclick = () => setRun(!running);
+  const setRun = (v) => { if(v && presentation.mode !== 'system')presentation.setMode('system');running = v; [btn, btnView].forEach(b => { b.textContent = v ? 'Pause' : 'Play'; b.setAttribute('aria-pressed', String(v)); });updateTravel(); };
+  document.querySelector('.viewport').addEventListener('model-view-change', event => {if(event.detail.mode!=='system')setRun(false);});
+  const atStop = () => currentPose && currentPose.brake === 0 && model.userData.rig.floors.includes(currentPose.y);
+  document.querySelector('.viewport').addEventListener('model-floor-request', event => {
+    const floor=event.detail.floor;
+    if(!Number.isInteger(floor)||floor<0||floor>=model.userData.rig.floors.length)return;
+    if(manualTrip){trip.request(floor,currentPose);}else if(atStop()){
+      manualTrip=true;trip.request(floor,currentPose);
+    }else queuedFloor=floor; // Let autoplay decelerate at its next stop before taking over.
+    setRun(true);
+  });
+  btn.onclick = btnView.onclick = () => {
+    if(!running && manualTrip && !trip.active){
+      cycle=makeCycle(model.userData.rig.floors,model.userData.rig.params.speed,currentPose.doorFloor);manualTrip=false;
+    }
+    setRun(!running);
+  };
   rebuild('bootstrap');
   setPage(activePage);
   bridgeReady = true;
@@ -2053,7 +2176,15 @@ const FINISH_LIBRARIES = [
   let last = performance.now();
   const frame = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (running && model) { const p = cycle.step(dt); poseElevator(model, p.y, p.door, p.doorFloor, p.brake); }
+    if (running && model) {
+      currentPose=manualTrip?trip.step(dt):cycle.step(dt);
+      poseElevator(model,currentPose.y,currentPose.door,currentPose.doorFloor,currentPose.brake);
+      if(!manualTrip&&queuedFloor!==null&&atStop()){
+        manualTrip=true;trip.request(queuedFloor,currentPose);queuedFloor=null;
+      }
+      if(manualTrip&&!trip.active)setRun(false);
+      updateTravel();
+    }
     if (showDims) updateLabels(dims, stage._camera, stage._renderer);
     requestAnimationFrame(frame);
   };

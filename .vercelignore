@@ -1,0 +1,6 @@
+.env*
+.git
+scripts
+docs
+README.md
+output

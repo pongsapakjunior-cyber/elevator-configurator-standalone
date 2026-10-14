@@ -1,0 +1,14 @@
+/* An additional finish must grow the selection area, not cover the gallery
+   below it. The existing layout is untouched when no landing door is chosen. */
+@media (min-width: 901px) {
+  body.page-decoration .decor-showcase:has(.selected-finish[data-finish-category="landingDoor"]:not(.empty)),
+  body.clean.page-decoration .decor-showcase:has(.selected-finish[data-finish-category="landingDoor"]:not(.empty)) {
+    height: auto;
+    min-height: var(--showcase-height);
+    grid-template-rows: auto;
+    align-items: start;
+  }
+  .decor-showcase:has(.selected-finish[data-finish-category="landingDoor"]:not(.empty)) .decor-preview {
+    height: var(--showcase-height);
+  }
+}

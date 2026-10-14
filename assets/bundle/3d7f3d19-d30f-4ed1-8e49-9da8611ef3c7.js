@@ -220,8 +220,7 @@
         preserveDrawingBuffer: true,
       });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.enabled = false;
       this._renderer = renderer;
       this.shadowRoot.insertBefore(renderer.domElement, this._err);
 
@@ -242,9 +241,7 @@
       scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d2c4, 1.0));
       const key = new THREE.DirectionalLight(0xffffff, 2.2);
       key.position.set(4, 7, 5);
-      key.castShadow = true;
-      key.shadow.mapSize.set(2048, 2048);
-      key.shadow.bias = -0.0002;
+      key.castShadow = false;
       this._key = key;
       scene.add(key);
       const fill = new THREE.DirectionalLight(0xfff4e6, 0.5);
@@ -253,10 +250,10 @@
 
       const ground = new THREE.Mesh(
         new THREE.PlaneGeometry(200, 200),
-        new THREE.ShadowMaterial({ opacity: 0.18 })
+        new THREE.ShadowMaterial({ opacity: 0 })
       );
       ground.rotation.x = -Math.PI / 2;
-      ground.receiveShadow = true;
+      ground.receiveShadow = false;
       this._ground = ground;
       scene.add(ground);
 
@@ -271,14 +268,20 @@
         const w = this.clientWidth || 1;
         const h = this.clientHeight || 1;
         renderer.setSize(w, h);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
+        const activeCamera = this._camera;
+        activeCamera.aspect = w / h;
+        if (activeCamera.isOrthographicCamera) {
+          const half = (activeCamera.top - activeCamera.bottom) / 2;
+          activeCamera.left = -half * w / h;
+          activeCamera.right = half * w / h;
+        }
+        activeCamera.updateProjectionMatrix();
       };
       fit();
       this._ro = new ResizeObserver(fit);
       this._loop = () => {
-        controls.update();
-        renderer.render(scene, camera);
+        this._controls.update();
+        renderer.render(scene, this._camera);
       };
       // Detached while three.js was fetching? Stay idle — the
       // connectedCallback resume starts the loop and observer on
@@ -309,8 +312,8 @@
       this._object = object;
       object.traverse((o) => {
         if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
+          o.castShadow = false;
+          o.receiveShadow = false;
         }
       });
       const box = new THREE.Box3().setFromObject(object);
@@ -329,12 +332,6 @@
         this._camera.updateProjectionMatrix();
         this._controls.target.copy(sphere.center);
         this._controls.update();
-        const span = sphere.radius * 3;
-        this._key.shadow.camera.left = -span;
-        this._key.shadow.camera.right = span;
-        this._key.shadow.camera.top = span;
-        this._key.shadow.camera.bottom = -span;
-        this._key.shadow.camera.updateProjectionMatrix();
       }
       this._scene.add(object);
       this._setButtonsEnabled(true);
@@ -393,13 +390,58 @@
       }
     }
 
+    /** OBJExporter does not apply instanceMatrix. Expand only the export
+     *  snapshot, sharing geometry/materials without cloning cyclic rig data or
+     *  changing the live model's hierarchy, transforms, or configuration. */
+    _objExportSnapshot() {
+      const THREE = this._THREE;
+      const snapshot = new THREE.Group();
+      snapshot.name = this._object.name;
+      const localMatrix = (node) => node.matrixAutoUpdate
+        ? new THREE.Matrix4().compose(node.position, node.quaternion, node.scale)
+        : node.matrix.clone();
+      const ancestors = [];
+      for (let parent = this._object.parent; parent; parent = parent.parent) ancestors.unshift(parent);
+      const ancestorWorld = new THREE.Matrix4();
+      for (const parent of ancestors) ancestorWorld.multiply(localMatrix(parent));
+      const append = (source, world, name) => {
+        let part;
+        if (source.isMesh) part = new THREE.Mesh(source.geometry, source.material);
+        else if (source.isLineSegments) part = new THREE.LineSegments(source.geometry, source.material);
+        else if (source.isLineLoop) part = new THREE.LineLoop(source.geometry, source.material);
+        else if (source.isLine) part = new THREE.Line(source.geometry, source.material);
+        else if (source.isPoints) part = new THREE.Points(source.geometry, source.material);
+        if (!part) return;
+        part.name = name;
+        part.visible = source.visible;
+        part.matrixAutoUpdate = false;
+        part.matrix.copy(world);
+        part.matrixWorld.copy(world);
+        snapshot.add(part);
+      };
+      const visit = (node, parentWorld) => {
+        const world = new THREE.Matrix4().multiplyMatrices(parentWorld, localMatrix(node));
+        if (node.isInstancedMesh) {
+          const instance = new THREE.Matrix4();
+          for (let i = 0; i < node.count; i++) {
+            node.getMatrixAt(i, instance);
+            append(node, new THREE.Matrix4().multiplyMatrices(world, instance), `${node.name}_instance_${i}`);
+          }
+        } else append(node, world, node.name);
+        for (const child of node.children) visit(child, world);
+      };
+      visit(this._object, ancestorWorld);
+      snapshot.updateMatrixWorld(true);
+      return snapshot;
+    }
+
     async _exportObj() {
       if (!this._object) return;
       const mod = await import('three/addons/exporters/OBJExporter.js');
       const mats = this._nameParts();
       const base = this._basename;
       const obj =
-        'mtllib ' + base + '.mtl\n' + new mod.OBJExporter().parse(this._object);
+        'mtllib ' + base + '.mtl\n' + new mod.OBJExporter().parse(this._objExportSnapshot());
       let mtl = '# Exported by three-d-stage\n';
       for (const m of mats) {
         const c = m.color || { r: 0.8, g: 0.8, b: 0.8 };

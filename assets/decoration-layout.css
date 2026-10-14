@@ -1,0 +1,97 @@
+/* Selection rail on the left; a fitted preview and collection on the right. */
+body.page-decoration .decoration-page,body.clean.page-decoration .decoration-page{
+  display:grid;grid-template-columns:clamp(270px,22vw,320px) minmax(0,1fr);overflow:hidden;
+}
+.decor-controls,body.clean.page-decoration .decor-controls{padding:18px;min-width:0;overflow:auto;border-right:1px solid var(--color-divider);border-top:0}
+.decor-controls h1,body.clean.page-decoration .decor-controls h1{display:block;font-size:25px;margin:3px 0 8px}
+.decor-intro,body.clean.page-decoration .decor-intro{display:block;font-size:12px;margin-bottom:16px}
+body.clean.page-decoration .decor-form{display:grid}
+.decor-form{gap:12px}
+.decor-field{min-width:0}
+.decor-field .input{min-width:0;width:100%;min-height:40px}
+.decor-summary,body.clean.page-decoration .decor-summary{margin-top:18px;grid-template-columns:1fr 1fr}
+.decor-summary .decor-summary-project,body.clean.page-decoration .decor-summary .decor-summary-project{grid-column:1 / -1}
+.decor-main{padding:12px;min-width:0;--showcase-height:clamp(320px,calc(100svh - 118px),620px)}
+.decor-showcase,body.clean.page-decoration .decor-showcase{
+  --showcase-height:clamp(320px,calc(100svh - 118px),620px);
+  height:var(--showcase-height);
+  grid-template-rows:minmax(0,1fr);
+  grid-template-columns:minmax(220px,min(46%,calc(var(--showcase-height) * .66))) minmax(0,1fr);
+  gap:12px;align-items:stretch;
+}
+.decor-preview,body.embed .decor-preview{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:#fff}
+.decor-preview img,body.embed .decor-preview img{width:100%;height:100%;min-height:0;object-fit:contain;background:#fff}
+.decor-preview-copy{position:static;max-width:none;padding:10px 12px;background:#fff;color:var(--color-text);border-top:1px solid var(--color-divider)}
+.decor-preview-copy b{font-size:15px;margin-bottom:3px}
+.decor-preview-copy span{font-size:11px;line-height:1.4}
+.selected-finishes{min-width:0;min-height:0;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto;align-self:start;align-content:start;align-items:start;gap:10px}
+.selected-finish,.selected-finish[data-finish-category="handrail"]{--finish-media-height:clamp(150px,22svh,190px);height:calc(var(--finish-media-height) + 42px);min-width:0;min-height:0;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;background:#fff}
+/* Small accessories remain supporting details, never a full-width hero image. */
+.selected-finish[data-finish-category="handrail"]{--finish-media-height:104px;width:min(100%,275px);justify-self:start;order:10}
+.selected-finish-media,.selected-finish[data-finish-category="handrail"] .selected-finish-media{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;padding:8px;background:#fff}
+.selected-finish img{height:100%;max-height:none;width:100%;object-fit:contain}
+.selected-finish-copy,.selected-finish[data-finish-category="handrail"] .selected-finish-copy{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-top:1px solid var(--color-divider)}
+.selected-finish-copy span{margin:0;letter-spacing:.04em;font-size:10px}
+.selected-finish-copy b{font-size:14px;white-space:nowrap}
+.selected-finishes:not(:has(.selected-finish:not(.empty) ~ .selected-finish:not(.empty))){grid-template-columns:1fr;max-width:275px}
+.decor-showcase:not(:has(.selected-finish:not(.empty))),body.clean.page-decoration .decor-showcase:not(:has(.selected-finish:not(.empty))){grid-template-columns:1fr}
+body.embed .decor-showcase{--showcase-height:clamp(320px,calc(100svh - 32px),580px)}
+/* With no accessories selected, use the adjacent space for the cabin collection. */
+@media(min-width:1101px){
+  body:not(.clean) .decor-main:not(:has(.selected-finish:not(.empty))){display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.15fr);grid-template-rows:32px calc(var(--showcase-height) - 42px) auto;gap:10px 12px;align-content:start}
+  body:not(.clean) .decor-main:not(:has(.selected-finish:not(.empty))) .decor-showcase{grid-column:1;grid-row:1 / 3}
+  body:not(.clean) .decor-main:not(:has(.selected-finish:not(.empty))) > .decor-library-head{display:flex;grid-column:2;grid-row:1;margin:0;align-items:center}
+  body:not(.clean) .decor-main:not(:has(.selected-finish:not(.empty))) #cabinGrid{display:grid;grid-column:2;grid-row:2;align-content:start;max-height:calc(var(--showcase-height) - 42px);overflow:auto;grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}
+  body:not(.clean) .decor-main:not(:has(.selected-finish:not(.empty))) .selection-library{grid-column:1 / -1}
+}
+/* Customer links show only their saved selection summary and corresponding photos. */
+body.clean.page-decoration .decoration-page{grid-template-columns:240px minmax(0,1fr)}
+body.clean.page-decoration .decor-controls{padding:12px}
+body.clean.page-decoration .decor-controls > :not(.decor-summary),
+body.clean.page-decoration .decor-library-head,
+body.clean.page-decoration #cabinGrid,
+body.clean.page-decoration .selection-library,
+body.clean.page-decoration .decor-preview-copy,
+body.clean.page-decoration .selected-finish-copy{display:none}
+body.clean.page-decoration .decor-controls .decor-summary{display:grid;margin:0}
+body.clean.page-decoration .decor-summary > div:has(dd[data-decor="cabin"]):last-child{grid-column:1 / -1}
+body.clean.page-decoration .decor-main{display:block}
+body.clean.page-decoration .decor-showcase{--showcase-height:clamp(440px,calc(100svh - 88px),960px)}
+body.clean.page-decoration .decor-preview,
+body.clean.page-decoration .selected-finish{grid-template-rows:minmax(0,1fr)}
+body.clean.page-decoration .selected-finish{height:var(--finish-media-height)}
+body.clean.page-decoration .decor-showcase:not(:has(.selected-finish:not(.empty))){max-width:calc(var(--showcase-height) * .67);margin-inline:auto}
+@media(min-width:1300px){
+  body.clean.page-decoration .selected-finishes{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  body.clean.page-decoration .decor-controls{padding:10px}
+  body.clean.page-decoration .decor-showcase:not(:has(.selected-finish:not(.empty))){max-width:none}
+  body.clean.page-decoration .decor-preview{grid-template-rows:auto}
+  body.clean.page-decoration .selected-finish{grid-template-rows:minmax(0,1fr)}
+}
+@media(max-width:1100px) and (min-width:901px){
+  body.page-decoration .decoration-page,body.clean.page-decoration .decoration-page{grid-template-columns:270px minmax(0,1fr)}
+  .decor-controls{padding:16px}
+  .selected-finish-copy{flex-wrap:wrap}
+}
+@media(max-width:900px){
+  body.page-decoration .decoration-page,body.clean.page-decoration .decoration-page{display:flex;flex-direction:column;overflow:visible}
+  .decor-controls,body.clean.page-decoration .decor-controls{flex:none;padding:14px;border-right:0;border-bottom:1px solid var(--color-divider);overflow:visible}
+  .decor-controls h1,body.clean.page-decoration .decor-controls h1{font-size:22px}
+  .decor-form,body.clean.page-decoration .decor-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .decor-controls .decor-summary{display:none}
+  .decor-main{flex:none}
+  .decor-main{padding:10px}
+  .decor-showcase,body.clean.page-decoration .decor-showcase{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:10px}
+  .decor-preview,body.embed .decor-preview{grid-template-rows:auto auto}
+  .decor-preview img,body.embed .decor-preview img{height:auto;max-height:48svh;object-fit:contain}
+  .selected-finishes{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto;gap:8px}
+  .selected-finish,.selected-finish[data-finish-category="handrail"]{--finish-media-height:clamp(120px,40vw,180px);grid-template-rows:minmax(0,1fr) auto}
+  .selected-finish[data-finish-category="handrail"]{--finish-media-height:90px}
+  .selected-finish-copy,.selected-finish[data-finish-category="handrail"] .selected-finish-copy{flex-wrap:wrap;padding:8px}
+  .selected-finish-copy span{font-size:9px}
+  .selected-finish-copy b{font-size:12px}
+  .decor-controls{padding:14px}
+  .decor-summary dd{overflow-wrap:anywhere}
+}
