@@ -2,6 +2,28 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {manufacturerModel,renderManufacturerSheets,sanitizeManufacturer,FACTORY_FIELDS} from '../assets/manufacturer.mjs';
 const fixture={project:'โครงการทดสอบ',modelName:'SEL(MRL)450',elevatorType:'mrl',shaftW:1600,shaftD:1800,carW:1200,carD:1200,carH:2400,doorW:700,doorH:2100,pit:1500,overhead:3700,capacity:450,speed:1,roping:2,entrances:1,doorType:'center',doorPanels:2,floors:3,floorToFloor:3400,manufacturer:{layout:'duplex',divider:200}};
+function sheetGeometry(svg){
+ const root=svg.match(/<svg\b[^>]*>/)?.[0];assert(root,'One SVG root is present');
+ const attribute=name=>root.match(new RegExp(`\\b${name}="([^"]+)"`))?.[1];
+ const [x,y,width,height]=(attribute('viewBox')||'').trim().split(/\s+/).map(Number);
+ assert.equal(x,0);assert.equal(y,0);assert(Number.isFinite(width)&&width>0);assert(Number.isFinite(height)&&height>0);
+ return {width,height,physicalWidth:parseFloat(attribute('width')),physicalHeight:parseFloat(attribute('height'))};
+}
+function assertSingleSheet(sheets){
+ assert.equal(sheets.length,1,'Manufacturer is one combined drawing, not continuation pages');
+ const [svg]=sheets;
+ assert.equal((svg.match(/<svg\b/g)||[]).length,1,'Only one root SVG is exported');
+ assert.equal((svg.match(/<\/svg>/g)||[]).length,1);
+ assert.doesNotMatch(svg,/NaN|undefined|Infinity/);
+ return svg;
+}
+test('manufacturer combines all five drawing views and all schedules into one A2 sheet',()=>{
+ const svg=assertSingleSheet(renderManufacturerSheets(fixture)),geometry=sheetGeometry(svg);
+ assert.equal(geometry.width,2400);assert.equal(geometry.height,1697);
+ assert.equal(geometry.physicalWidth,594);assert.equal(geometry.physicalHeight,420);
+ for(const label of ['DUPLEX SHAFT PLAN LAYOUT','HOISTWAY SECTION','STRUCTURAL OPENING','DOOR ENTRANCE DETAIL','MACHINE / SUPPORT PLAN','CONFIGURED REQUIREMENTS','FACTORY DESIGN SCHEDULE','FLOOR LEVELS &amp; QUOTATION DETAILS'])assert(svg.includes(label),label);
+ assert.match(svg,/FOR MANUFACTURER REVIEW/);assert.match(svg,/NOT FOR CONSTRUCTION/);
+});
 test('duplex dimension numbers follow inputs; known-only arithmetic',()=>{
  const model=manufacturerModel(fixture);assert.equal(model.bankWidth,3400);assert.equal(model.travel,6800);assert.equal(model.totalHeight,12000);
  const next=manufacturerModel({...fixture,shaftW:1900,floors:4,floorHeightMode:'individual',floorHeights:[3000,3100,3200],overhead:3000});
@@ -24,11 +46,23 @@ test('project and quotation details update on every render, and XML is escaped',
  const sheets=renderManufacturerSheets(next).join('');assert.match(sheets,/New &amp; &lt;Project&gt;/);assert.match(sheets,/ST.TEST/);assert(!sheets.includes('<script>'));
  assert(!sheets.includes(fixture.project));
 });
-test('40 stops and long descriptions continue onto bounded sheets without losing the last floor/text',()=>{
+test('40 stops and long descriptions enlarge one sheet without losing the last floor or text',()=>{
  const long='รายละเอียด '.repeat(100)+'LAST REQUIREMENT';
- const sheets=renderManufacturerSheets({...fixture,floors:40,quotationContext:{specifications:[['Long requirement',long]]}});
- assert(sheets.length>=4);assert.match(sheets.join(''),/F39 → F40/);assert.match(sheets.join(''),/LAST REQUIREMENT/);
- assert(sheets.every(svg=>!svg.includes('NaN')&&!svg.includes('undefined')));
+ const svg=assertSingleSheet(renderManufacturerSheets({...fixture,floors:40,quotationContext:{specifications:[['Long requirement',long]]}}));
+ assert.match(svg,/F1 → F2/);assert.match(svg,/F39 → F40/);assert.match(svg,/LAST REQUIREMENT/);
+ const base=sheetGeometry(renderManufacturerSheets(fixture)[0]),extended=sheetGeometry(svg);
+ assert.equal(extended.width,base.width);assert(extended.height>base.height);
+ assert.equal(extended.physicalWidth,base.physicalWidth);assert(extended.physicalHeight>base.physicalHeight);
+ assert(Math.abs(extended.physicalHeight/extended.height-extended.physicalWidth/extended.width)<0.001,'Custom sheet preserves drawing scale');
+ const footer=svg.match(/<text\b[^>]*\by="([\d.]+)"[^>]*>FOR MANUFACTURER REVIEW[^<]*<\/text>/);
+ assert(footer,'Review disclaimer remains on the extended sheet');
+ assert(Number(footer[1])>extended.height-150&&Number(footer[1])<extended.height,'Footer stays within the final canvas edge');
+});
+test('one-sheet schedules retain every supplied factory entry and quote requirement',()=>{
+ const fields=Object.fromEntries(FACTORY_FIELDS.map(([key])=>[key,`SUPPLIED-${key}`]));
+ const svg=assertSingleSheet(renderManufacturerSheets({...fixture,manufacturer:{...fixture.manufacturer,fields},quotationContext:{quoteNo:'ST.SINGLE',specifications:[['Requirement A','FIRST REQUIREMENT'],['Requirement B','LAST REQUIREMENT']]}}));
+ for(const value of Object.values(fields))assert(svg.includes(value),value);
+ for(const value of ['ST.SINGLE','FIRST REQUIREMENT','LAST REQUIREMENT','F1 → F2','F2 → F3'])assert(svg.includes(value),value);
 });
 test('incomplete floor data is TBC instead of an invented travel',()=>{
  const model=manufacturerModel({...fixture,floorHeightMode:'individual',floorHeights:[3000]});assert.equal(model.travel,null);assert.equal(model.totalHeight,null);
@@ -41,10 +75,10 @@ test('manufacturer schedule excludes decoration choices without modifying their 
 });
 
 test('factory redraw includes detailed hardware, a tall section and structural views',()=>{
- const [general,details]=renderManufacturerSheets(fixture);
+ const general=assertSingleSheet(renderManufacturerSheets(fixture));
  assert((general.match(/<(?:path|line|rect|circle|polygon)\b/g)||[]).length>700);
  for(const label of ['Traveling height 6,800','Pit + travel + OH 12,000','Pit ladder','CWT RG TBC','Car RG TBC'])assert(general.includes(label),label);
- for(const label of ['STRUCTURAL OPENING','DOOR ENTRANCE DETAIL','MACHINE / SUPPORT PLAN'])assert(details.includes(label),label);
+ for(const label of ['STRUCTURAL OPENING','DOOR ENTRANCE DETAIL','MACHINE / SUPPORT PLAN'])assert(general.includes(label),label);
  const single=renderManufacturerSheets({...fixture,doorType:'side',doorPanels:3,manufacturer:{layout:'single'}}).join('');
  assert(single.includes('SINGLE SHAFT PLAN'));assert(single.includes('Side-opening / 3 panels'));
  assert(!single.includes('DUPLEX SHAFT PLAN'));assert(!single.includes('07 Overall'));

@@ -45,15 +45,32 @@ export function manufacturerModel(config = {}) {
 const txt = (x,y,value,size=13,anchor='start',extra='') => `<text x="${x}" y="${y}" font-size="${size}" text-anchor="${anchor}" ${extra}>${escapeXml(value)}</text>`;
 const line = (x1,y1,x2,y2,cls='') => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${cls}"/>`;
 const rect = (x,y,w,h,cls='') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="${cls}"/>`;
-function tableRows(rows,x,y,width,columns=3,rowHeight=35) {
-  let out='';const count=Math.ceil(rows.length/columns), cw=width/columns;
-  rows.forEach(([key,value],i)=>{const col=Math.floor(i/count), row=i%count, yy=y+row*rowHeight;
-    const display=value||'Manufacturer to confirm', fit=Array.from(display).length*7>cw-16 ? ` textLength="${cw-16}" lengthAdjust="spacingAndGlyphs"` : '';
-    out+=rect(x+col*cw,yy,cw,rowHeight,'cell')+txt(x+col*cw+8,yy+12,key,10)+txt(x+col*cw+8,yy+27,display,12,'start',`class="${value?'':'pending'}"${fit}`);
-  });return out;
+// Wrap text at a conservative glyph width; never squeeze or discard long specs.
+function wrapText(value,width,size=14) {
+  const limit=Math.max(1,Math.floor(width/(size*.68))),lines=[];
+  for(const paragraph of String(value).split(/\r?\n/)){
+    const chars=Array.from(paragraph);if(!chars.length)lines.push('');
+    while(chars.length){let cut=Math.min(limit,chars.length);if(chars.length>cut){const space=chars.slice(0,cut).lastIndexOf(' ');if(space>limit*.5)cut=space+1;}lines.push(chars.splice(0,cut).join('').trimEnd());}
+  }return lines;
 }
-function shell(m,body,page,total,title) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="420mm" height="297mm" viewBox="0 0 1600 1132" role="img" aria-label="${escapeXml(title)}"><style>text{font-family:Arial,Tahoma,sans-serif;fill:#122b27}line,rect{stroke:#263d37;stroke-width:1;fill:none}.wall{fill:#eef2f0;stroke-width:2}.light,.extension{stroke:#81948e;stroke-width:.6}.center{stroke:#899c95;stroke-dasharray:10 4 2 4}.dimension{marker-start:url(#arrow);marker-end:url(#arrow);stroke-width:.8}.dim-label{paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round}.cell{stroke:#bdc8c2;stroke-width:.7}.pending{fill:#8b5b14}</style><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#263d37"/></marker></defs><rect width="1600" height="1132" style="fill:white;stroke:none"/>${rect(24,24,1552,1084)}${txt(45,57,m.project||'Project not entered',24)}${txt(45,83,`${m.model||m.elevatorType} • ${m.quotation||'Quotation not linked'} • ${title}`,14)}${txt(1555,52,'SCHNEIDER LIFT',21,'end')}${txt(1555,77,'MANUFACTURER REVIEW',13,'end')}${line(24,100,1576,100)}${body}${line(24,1055,1576,1055)}${txt(44,1078,'FOR MANUFACTURER REVIEW — NOT FOR CONSTRUCTION',15)}${txt(44,1098,'Configured dimensions are requirements, not an engineering approval. All factory values and site dimensions require verification.',11)}${txt(1555,1078,`${page} / ${total}   •   mm   •   NTS   •   A3`,13,'end')}${txt(1555,1098,m.quotationDate||'Unconfirmed / no approval date',11,'end')}</svg>`;
+function schedule(rows,title,x,y,width) {
+  let out=txt(x,y,title,17),cursor=y+15;const keyWidth=240;
+  for(const [key,value] of rows){
+    const keys=wrapText(key,keyWidth-20,13),values=wrapText(value||'Manufacturer to confirm',width-keyWidth-20,13);
+    const h=Math.max(30,Math.max(keys.length,values.length)*17+13);
+    out+=rect(x,cursor,width,h,'cell')+line(x+keyWidth,cursor,x+keyWidth,cursor+h,'cell');
+    keys.forEach((part,i)=>{out+=txt(x+10,cursor+21+i*17,part,13);});
+    values.forEach((part,i)=>{out+=txt(x+keyWidth+10,cursor+21+i*17,part,13,'start',`class="${value?'':'pending'}"`);});
+    cursor+=h;
+  }return {markup:out,endY:cursor};
+}
+function view(fragment,x,y,width,height,source) {
+  const [sx,sy,sw,sh]=source,scale=Math.min(width/sw,height/sh);
+  return `<g transform="translate(${x} ${y}) scale(${scale}) translate(${-sx} ${-sy})">${fragment}</g>`;
+}
+function shell(m,body,height,header) {
+  const paperHeight=height===1697?420:Number((height*594/2400).toFixed(2)),foot=height-80;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="594mm" height="${paperHeight}mm" viewBox="0 0 2400 ${height}" role="img" aria-label="Manufacturer complete drawing and specifications"><style>text{font-family:Arial,Tahoma,sans-serif;fill:#122b27}line,rect{stroke:#263d37;stroke-width:1;fill:none}.dimension{marker-start:url(#arrow);marker-end:url(#arrow);stroke-width:.8}.dim-label{paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round}${cadStyles}</style><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#263d37"/></marker>${cadDefs}</defs><rect width="2400" height="${height}" style="fill:white;stroke:none"/>${rect(24,24,2352,height-48)}${header}${body}${line(24,foot,2376,foot)}${txt(44,foot+28,'FOR MANUFACTURER REVIEW — NOT FOR CONSTRUCTION',17)}${txt(44,foot+49,'Configured requirements only. Factory values, locations, loads and site dimensions require manufacturer verification.',13)}${txt(2355,foot+28,`1 / 1   •   mm   •   NTS   •   ${height===1697?'A2':'594 × '+paperHeight+' mm'}`,15,'end')}${txt(2355,foot+49,m.quotationDate||'Unconfirmed / no approval date',13,'end')}</svg>`;
 }
 export function renderManufacturerSheets(config) {
   const m=manufacturerModel(config);
@@ -62,31 +79,32 @@ export function renderManufacturerSheets(config) {
   const detailRows=[['LOCATION',m.location||'Not entered'],['LIFT NO.',m.liftNo||'Not entered'],...m.known];
   let level=0;
   const floors=m.heights.map((height,i)=>{const prior=level;level=height==null||level==null?null:level+height;return [`F${i+1} → F${i+2}`,`${fmt(height)} mm • level ${fmt(prior)} → ${fmt(level)}`];});
-  const pages=[...floors,...detailRows];
-  // Long quotation descriptions wrap onto continuation sheets; never crop them.
-  const expanded=pages.flatMap(([label,value])=>{
-    const chars=Array.from(value), pieces=[];
-    while(chars.length){let cut=Math.min(92,chars.length);if(chars.length>cut){const space=chars.slice(0,cut).lastIndexOf(' ');if(space>46)cut=space+1;}pieces.push(chars.splice(0,cut).join(''));}
-    return (pieces.length?pieces:['']).map((part,i)=>[i?`${label} (cont.)`:label,part]);
-  });
-  const chunks=[];for(let i=0;i<expanded.length;i+=22)chunks.push(expanded.slice(i,i+22));
-  if(!chunks.length)chunks.push([]);
-  const first=detailedPlan(m)+detailedSection(m)+txt(45,822,'CONFIGURED REQUIREMENTS — QUOTATION / CONFIGURATOR',16)+tableRows(configured,45,838,900,2,32);
-  const second=detailedFactoryViews(m)+txt(45,830,'FACTORY DESIGN SCHEDULE — SUPPLIED VALUES ONLY; BLANKS REQUIRE MANUFACTURER DESIGN',16)+tableRows(factory,45,846,1510,4,31);
-  const total=chunks.length+2;
-  return [shell(m,first,1,total,'General arrangement'),shell(m,second,2,total,'Factory construction details'),...chunks.map((rows,i)=>shell(m,txt(45,140,'06 / FLOOR LEVELS & QUOTATION DETAILS',18)+txt(45,167,'Quotation descriptions below are supplied requirements, not certified manufacturer specifications.',13)+tableRows(rows,45,190,1510,1,36)+txt(45,1022,'Manufacturer: __________________  Drawing / revision: __________________  Checked by: __________________  Date: __________',14),i+3,total,'Requirements schedule'))].map(svg=>svg.replace('</style>',cadStyles+'</style>').replace('</defs>',cadDefs+'</defs>'));
+  const projectLines=wrapText(m.project||'Project not entered',1700,26);
+  const subtitleLines=wrapText(`${m.model||m.elevatorType} • ${m.quotation||'Quotation not linked'} • Complete drawing and specifications`,1900,15);
+  const headerBottom=45+projectLines.length*31+subtitleLines.length*21+14,shift=headerBottom-111;
+  const header=projectLines.map((part,i)=>txt(44,60+i*31,part,26)).join('')+subtitleLines.map((part,i)=>txt(44,45+projectLines.length*31+i*21+15,part,15)).join('')+txt(2355,58,'SCHNEIDER LIFT',24,'end')+txt(2355,83,'MANUFACTURER REVIEW',14,'end')+line(24,headerBottom,2376,headerBottom);
+  const configuredTable=schedule(configured,'CONFIGURED REQUIREMENTS',1740,145+shift,624);
+  const factoryTable=schedule(factory,'FACTORY DESIGN SCHEDULE',1740,configuredTable.endY+35,624);
+  const requirements=schedule([...floors,...detailRows],'FLOOR LEVELS & QUOTATION DETAILS',1740,factoryTable.endY+35,624);
+  const height=Math.ceil(Math.max(1697+shift,requirements.endY+130));
+  const drawings=view(detailedPlan(m),38,145+shift,1125,670,[0,110,980,700])+view(detailedSection(m),1168,145+shift,520,760,[975,110,570,930])+view(detailedFactoryViews(m),38,890+shift,1664,708,[20,110,1540,710]);
+  const body=drawings+line(1715,headerBottom,1715,height-80,'cell')+configuredTable.markup+factoryTable.markup+requirements.markup+txt(1740,requirements.endY+28,'Manufacturer / revision: ______________________________',13);
+  return [shell(m,body,height,header)];
 }
 export function createManufacturerUI(host, onChange) {
-  let config={}, state=sanitizeManufacturer(), sheets=[];
+  let config={}, state=sanitizeManufacturer(), sheets=[],valid=false,exporting=false,pdfUrl=null;
   host.innerHTML=`<div class="manufacturer-tools" data-planning-only><div><h1>Manufacturer</h1><p>Live quotation / configurator dimensions. Factory design values remain unconfirmed.</p></div><div class="manufacturer-actions"><label>Arrangement<select id="manufacturerLayout"><option value="duplex">Duplex — identical lifts</option><option value="single">Single lift</option></select></label><label>Divider thickness (mm)<input id="manufacturerDivider" type="number" min="1" max="2000" placeholder="Manufacturer to confirm"></label><button type="button" id="manufacturerDownload">Download drawing SVGs</button><button type="button" id="manufacturerLink">Copy manufacturer link</button></div><details><summary>Factory-provided specifications (optional)</summary><p>Leave unknown values blank. These entries are supplied values, not an approval or automatic calculation.</p><div class="manufacturer-fields">${FACTORY_FIELDS.map(([key,label])=>`<label>${label}<input data-factory="${key}" placeholder="Manufacturer to confirm" maxlength="240"></label>`).join('')}</div></details><p id="manufacturerNotice" role="status"></p></div><div id="manufacturerSheets" class="manufacturer-sheets"></div>`;
   const layout=host.querySelector('#manufacturerLayout'),divider=host.querySelector('#manufacturerDivider'),notice=host.querySelector('#manufacturerNotice');
-  const sheetSelect=document.createElement('select');sheetSelect.id='manufacturerSheet';sheetSelect.setAttribute('aria-label','Drawing sheet to download');
-  const sheetLabel=document.createElement('label');sheetLabel.textContent='Drawing sheet';sheetLabel.append(sheetSelect);host.querySelector('#manufacturerDownload').before(sheetLabel);host.querySelector('#manufacturerDownload').textContent='Download SVG';
-  const render=()=>{sheets=renderManufacturerSheets({...config,manufacturer:state});const selected=sheetSelect.value;sheetSelect.replaceChildren(...sheets.map((_,i)=>new Option(`Sheet ${i+1} — ${i===0?'General arrangement':i===1?'Factory construction details':'Requirements schedule'}`,String(i))));sheetSelect.value=selected!=='' && Number(selected)<sheets.length?selected:'0';host.querySelector('#manufacturerSheets').innerHTML=sheets.map(svg=>`<article class="manufacturer-sheet">${svg}</article>`).join('');};
+  const pdfButton=document.createElement('button');pdfButton.id='manufacturerPdf';pdfButton.type='button';pdfButton.textContent='Export PDF';host.querySelector('#manufacturerDownload').before(pdfButton);host.querySelector('#manufacturerDownload').textContent='Download SVG';
+  const printStyle=document.createElement('style');host.append(printStyle);
+  const clearPdf=()=>{if(pdfUrl){URL.revokeObjectURL(pdfUrl);pdfUrl=null;}notice.querySelector('a')?.remove();};
+  const render=()=>{clearPdf();sheets=renderManufacturerSheets({...config,manufacturer:state});host.querySelector('#manufacturerSheets').innerHTML=`<article class="manufacturer-sheet">${sheets[0]}</article>`;const svg=host.querySelector('#manufacturerSheets svg');printStyle.textContent=`@media print{@page manufacturer{size:${svg.getAttribute('width')} ${svg.getAttribute('height')};margin:0}}`;};
   const change=()=>{state=sanitizeManufacturer({layout:layout.value,divider:divider.value,fields:Object.fromEntries([...host.querySelectorAll('[data-factory]')].map(input=>[input.dataset.factory,input.value]))});divider.setCustomValidity(divider.value && !state.divider?'Enter a positive divider thickness up to 2000 mm':'');render();onChange(state);};
-  host.querySelector('.manufacturer-tools').addEventListener('input',event=>{if(event.target.matches('input,select') && event.target!==sheetSelect)change();});
-  host.querySelector('#manufacturerDownload').onclick=()=>{if(!divider.reportValidity())return;const base=(config.project||'Schneider-Lift').replace(/[<>:"/\\|?*]/g,'-').slice(0,80),i=Number(sheetSelect.value)||0,svg=sheets[i];if(!svg)return;const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),a=document.createElement('a');a.href=url;a.download=`${base}-manufacturer-${i+1}.svg`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notice.textContent=`Drawing sheet ${i+1} downloaded. Factory review required.`;};
+  host.querySelector('.manufacturer-tools').addEventListener('input',event=>{if(event.target.matches('input,select'))change();});
+  const filename=()=>`${(config.project||'Schneider-Lift').replace(/[<>:"/\\|?*]/g,'-').slice(0,80)}-manufacturer`;
+  host.querySelector('#manufacturerDownload').onclick=()=>{if(!valid||!divider.reportValidity())return;const svg=sheets[0];if(!svg)return;const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),a=document.createElement('a');a.href=url;a.download=`${filename()}.svg`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notice.textContent='Complete drawing downloaded as one SVG sheet. Factory review required.';};
+  pdfButton.onclick=async()=>{if(exporting||!valid||!divider.reportValidity()||!sheets[0])return;clearPdf();exporting=true;enable(valid);notice.textContent='Preparing one-page PDF at print resolution…';const svg=sheets[0],name=filename();try{const {exportManufacturerPdf}=await import('./manufacturer-pdf.mjs');const result=await exportManufacturerPdf(svg,{filename:`${name}.pdf`,download:false});if(svg!==sheets[0]||!valid)throw new Error('Configuration changed. Please export the current drawing again.');pdfUrl=URL.createObjectURL(result.blob);notice.textContent='One-page PDF ready. Factory review required. ';const link=document.createElement('a');link.href=pdfUrl;link.download=result.filename;link.textContent='Download PDF';notice.append(link);link.click();}catch(error){notice.textContent='PDF export failed: '+(error?.message||'Please try again.');}finally{exporting=false;enable(valid);}};
   host.querySelector('#manufacturerLink').onclick=async()=>{if(!divider.reportValidity())return;try{const bytes=new TextEncoder().encode(JSON.stringify({...config,manufacturer:state}));let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);const url=new URL(location.pathname,location.origin);url.searchParams.set('c',btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,''));url.searchParams.set('page','manufacturer');await navigator.clipboard.writeText(url.href);notice.textContent='Manufacturer link copied with current project, dimensions and factory entries.';}catch{notice.textContent='Copy the current browser address to share this manufacturer view.';}};
-  const enable=value=>{host.querySelector('#manufacturerDownload').disabled=!value;host.querySelector('#manufacturerLink').disabled=!value;};
-  return { update(next, warnings=[]) {enable(true);config=next;state=sanitizeManufacturer(next.manufacturer);layout.value=state.layout;if(document.activeElement!==divider)divider.value=state.divider;host.querySelectorAll('[data-factory]').forEach(input=>{if(document.activeElement!==input)input.value=state.fields[input.dataset.factory];});notice.textContent=warnings.length?'Review notes — these drawings retain the entered requirements: '+warnings.join(' '):'Dimensions follow current input. Motor power, current, rail gauges and reactions are not inferred.';render();}, invalidate(message){enable(false);notice.textContent=message;host.querySelector('#manufacturerSheets').replaceChildren();}, get value(){return state;} };
+  const enable=value=>{valid=value;pdfButton.disabled=!value||exporting;host.querySelector('#manufacturerDownload').disabled=!value;host.querySelector('#manufacturerLink').disabled=!value;};
+  return { update(next, warnings=[]) {enable(true);config=next;state=sanitizeManufacturer(next.manufacturer);layout.value=state.layout;if(document.activeElement!==divider)divider.value=state.divider;host.querySelectorAll('[data-factory]').forEach(input=>{if(document.activeElement!==input)input.value=state.fields[input.dataset.factory];});notice.textContent=warnings.length?'Review notes — these drawings retain the entered requirements: '+warnings.join(' '):'One sheet contains every drawing and specification. A2 landscape; extensive requirements enlarge the same sheet. Factory ratings are not inferred.';render();}, invalidate(message){enable(false);clearPdf();sheets=[];notice.textContent=message;host.querySelector('#manufacturerSheets').replaceChildren();}, get value(){return state;} };
 }

@@ -7,7 +7,7 @@ editors also provide a current-context manufacturer link and an embedded tab.
   hoistway section, configured requirements, floor levels and quotation details.
 - Detailed reference symbols include rail brackets/anchors/splices, counterweight
   plates/shoes, car sling/cross-head/safeties, rope runs, traction machine, door
-  hangers/sills/returns, pit ladder and buffers. A separate sheet has an open
+  hangers/sills/returns, pit ladder and buffers. The same sheet has an open
   structural isometric, I-section beam symbols, entrance elevation, machine
   support plan. Lifting hooks are omitted from drawings, call-outs, factory input
   fields and schedules; legacy links containing that removed field ignore it.
@@ -21,9 +21,16 @@ editors also provide a current-context manufacturer link and an embedded tab.
   are copied from a reference project. Factory fields are editable supplied text.
 - Full editor/manufacturer links preserve factory fields and quotation context.
   Compact customer QR schema remains byte-compatible and excludes factory fields.
-- SVG downloads are vector A3 sheets. Long descriptions/floor schedules continue
-  onto extra sheets; choose a sheet before downloading. Mobile has touch-sized
-  controls and a horizontally scrollable drawing viewport.
+- Manufacturer displays one combined sheet with all five views and all schedules.
+  The sheet is A2 landscape by default. Longer supplied descriptions or floor
+  schedules enlarge that single sheet without hiding or truncating requirements.
+- Export PDF downloads exactly one page at the drawing's physical dimensions.
+  A2 output is a lossless 300-dpi browser raster, preserving Thai glyphs and CAD
+  styles; it is not selectable/vector PDF text. Download SVG remains vector.
+  Large pages use bounded raster memory; pages beyond 5000 mm fail explicitly
+  instead of clipping. A visible PDF download link supports browsers that defer
+  automatic downloads. Changing input invalidates the previously prepared PDF.
+- Mobile retains touch-sized controls and a horizontally scrollable drawing.
 - These are requirements/review drawings, NOT certified installation drawings.
   Final machine/rail positions, dimensions, loads and structural design belong
   to the manufacturer and reviewing engineer. The Duplex view assumes identical
@@ -33,7 +40,8 @@ Validation: pure-data tests cover live dimensions, known-only arithmetic, unknow
 values, factory entries, XML escaping, long schedules and 40 stops. Existing
 landing-door codecs, overhead, cabin preview, geometry and sizing regressions pass.
 Browser verification uses synthetic data; no production quotation was edited.
-The October 15 factory redraw, with lifting hooks removed, is authorized for
-production release. Verify the deployed build before assuming promotion.
-Regression suite: 94 passing tests. The door-clearance test harness now injects
+The combined one-page sheet and PDF export are approved for the October 15 v3
+release. An actual exported A2 PDF was checked as one page with all five views,
+complete schedules and Thai text; deployment verification is recorded separately.
+Regression suite: 102 passing tests. The door-clearance test harness now injects
 the actual landing-door and overhead helpers instead of omitting those imports.
