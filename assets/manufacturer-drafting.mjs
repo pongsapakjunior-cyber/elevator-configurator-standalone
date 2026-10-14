@@ -83,7 +83,7 @@ export function detailedPlan(m){
 }
 
 export function detailedSection(m){
- let s=title(990,133,'02','HOISTWAY SECTION')+text(990,153,'Longitudinal section · interrupted travel · NTS',11);
+ let s=title(990,133,'02','HOISTWAY SECTION')+text(990,153,'Longitudinal section · continuous shaft · NTS',11);
  const x=1172,w=178,roof=234,top=502,low=790,bottom=932,mr=m.elevatorType.startsWith('MR —');
  const carTop=335,carBase=top-10,cx=x+31,cw=114,cwtX=x+w-23;
  s+=rect(x-12,roof-12,w+24,bottom-roof+24,'cad-wall')+rect(x,roof,w,bottom-roof,'cad-white');
@@ -133,9 +133,6 @@ export function detailedSection(m){
  s+=path(`M${x+3} ${bottom-12}h-10v-9M${x+3} ${low+26}h-10v-9`)+circle(x+7,low-35,6)+line(x+7,low-42,x+7,low-28)+line(x,low-35,x+14,low-35)+rect(x+4,low-58,8,12);
  s+=leader(x+88,bottom-56,x+52,bottom-86,'R3',-1)+leader(cwtX,bottom-39,x+w+32,bottom-30,'R4');
  s+=leader(x+14,bottom-30,x-40,bottom-27,'Pit ladder',-1);
- // Conventional interrupted-shaft break: dimension labels retain full travel.
- const by=645;
- s+=polygon([[x-14,by],[x+45,by-6],[x+112,by+6],[x+w+14,by],[x+w+14,by+13],[x+112,by+19],[x+45,by+7],[x-14,by+13]],'cad-white');
  s+=vertical(roof,top,x+w+52,x+w,`10 OH ${fmt(m.overhead)}`,12)+vertical(top,low,x+w+52,x+w,`09 Traveling height ${fmt(m.travel)}`,12)+vertical(low,bottom,x+w+52,x+w,`08 Pit ${fmt(m.pit)}`,12);
  s+=vertical(roof,bottom,x+w+119,x+w,`Pit + travel + OH ${fmt(m.totalHeight)}`,12);
  s+=vertical(carTop+2,carBase-2,x-51,cx,`11 Car H ${fmt(m.carH)}`,11)+vertical(top-136,top,x-87,x-20,`12 Door H ${fmt(m.doorH)}`,11);

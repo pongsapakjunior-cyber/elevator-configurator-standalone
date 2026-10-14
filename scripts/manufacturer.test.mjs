@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {manufacturerModel,renderManufacturerSheets,sanitizeManufacturer,FACTORY_FIELDS} from '../assets/manufacturer.mjs';
+import {detailedSection} from '../assets/manufacturer-drafting.mjs';
 const fixture={project:'โครงการทดสอบ',modelName:'SEL(MRL)450',elevatorType:'mrl',shaftW:1600,shaftD:1800,carW:1200,carD:1200,carH:2400,doorW:700,doorH:2100,pit:1500,overhead:3700,capacity:450,speed:1,roping:2,entrances:1,doorType:'center',doorPanels:2,floors:3,floorToFloor:3400,manufacturer:{layout:'duplex',divider:200}};
 function sheetGeometry(svg){
  const root=svg.match(/<svg\b[^>]*>/)?.[0];assert(root,'One SVG root is present');
@@ -82,6 +83,17 @@ test('factory redraw includes detailed hardware, a tall section and structural v
  const single=renderManufacturerSheets({...fixture,doorType:'side',doorPanels:3,manufacturer:{layout:'single'}}).join('');
  assert(single.includes('SINGLE SHAFT PLAN'));assert(single.includes('Side-opening / 3 panels'));
  assert(!single.includes('DUPLEX SHAFT PLAN'));assert(!single.includes('07 Overall'));
+});
+
+test('hoistway section stays continuous without a break mask and retains entered dimensions',()=>{
+ for(const elevatorType of ['mr','mrl']){
+  const model=manufacturerModel({...fixture,elevatorType}),section=detailedSection(model);
+  assert.match(section,/continuous shaft · NTS/);
+  assert.doesNotMatch(section,/interrupted travel|<polygon\b/,'No jagged white mask crosses the shaft');
+  for(const x of [1187,1335])assert(section.includes(`<rect x="${x}" y="249" width="3" height="678"`),'Guide rail runs continuously through the former break');
+  for(const label of ['10 OH 3,700','09 Traveling height 6,800','08 Pit 1,500','Pit + travel + OH 12,000','11 Car H 2,400','12 Door H 2,100'])assert(section.includes(label),label);
+  assertSingleSheet(renderManufacturerSheets({...fixture,elevatorType}));
+ }
 });
 
 test('lifting hooks are excluded from factory fields and drawings, including legacy links',()=>{

@@ -3,7 +3,7 @@
 Open `?page=manufacturer`, or choose Manufacturer in the navigation. Quotation
 editors also provide a current-context manufacturer link and an embedded tab.
 
-- Single or identical-lift Duplex shaft plan, numbered dimensions, tall interrupted
+- Single or identical-lift Duplex shaft plan, numbered dimensions, tall continuous
   hoistway section, configured requirements, floor levels and quotation details.
 - Detailed reference symbols include rail brackets/anchors/splices, counterweight
   plates/shoes, car sling/cross-head/safeties, rope runs, traction machine, door
